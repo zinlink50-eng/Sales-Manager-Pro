@@ -10,6 +10,7 @@ import { useBranding } from "@/contexts/BrandingContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { useState } from "react";
+import { type Role, ROLE_LABELS, ROLE_BADGE, getAllowedPaths } from "@/lib/rbac";
 
 interface NavItem {
   to: string;
@@ -18,7 +19,13 @@ interface NavItem {
   end?: boolean;
 }
 
-const navGroups: { label: string; items: NavItem[] }[] = [
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+// All possible nav groups — filtered per role at render time
+const ALL_GROUPS: NavGroup[] = [
   {
     label: "ပင်မ",
     items: [
@@ -28,16 +35,16 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "ရောင်းမည်",
     items: [
-      { to: "/sales",    label: "အရောင်းစာမျက်နှာ", icon: ShoppingCart },
-      { to: "/products", label: "ကုန်ပစ္စည်းများ",    icon: Package },
-      { to: "/customers",label: "ဖောက်သည်များ",       icon: Users },
+      { to: "/sales",     label: "အရောင်းစာမျက်နှာ", icon: ShoppingCart },
+      { to: "/products",  label: "ကုန်ပစ္စည်းများ",    icon: Package },
+      { to: "/customers", label: "ဖောက်သည်များ",       icon: Users },
     ],
   },
   {
     label: "စီမံမှု",
     items: [
-      { to: "/tasks",   label: "လုပ်စရာများ",    icon: CheckSquare },
-      { to: "/reports", label: "အစီရင်ခံစာ",     icon: BarChart3 },
+      { to: "/tasks",   label: "လုပ်စရာများ",  icon: CheckSquare },
+      { to: "/reports", label: "အစီရင်ခံစာ",   icon: BarChart3 },
     ],
   },
   {
@@ -48,11 +55,24 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
 ];
 
+function getNavGroups(role: Role): NavGroup[] {
+  const allowed = getAllowedPaths(role);
+  return ALL_GROUPS
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => allowed.includes(item.to)),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
 export default function Sidebar() {
   const { user, logout } = useAuth();
-  const { branding } = useBranding();
+  const { branding }     = useBranding();
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
+
+  const role      = (user?.role ?? "sales_rep") as Role;
+  const navGroups = getNavGroups(role);
 
   const shopInitials = branding.shopName
     .split(/\s+/)
@@ -62,7 +82,7 @@ export default function Sidebar() {
     .slice(0, 2) || "SM";
 
   return (
-    // Desktop only — completely hidden on mobile (bottom nav handles mobile)
+    // Desktop only — completely hidden on mobile (BottomNav handles mobile)
     <aside
       className={cn(
         "hidden md:flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 shrink-0",
@@ -70,7 +90,12 @@ export default function Sidebar() {
       )}
     >
       {/* Logo / Shop Branding */}
-      <div className={cn("flex items-center h-16 px-4 border-b border-sidebar-border shrink-0", collapsed ? "justify-center" : "gap-3")}>
+      <div
+        className={cn(
+          "flex items-center h-16 px-4 border-b border-sidebar-border shrink-0",
+          collapsed ? "justify-center" : "gap-3"
+        )}
+      >
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-white font-bold text-sm overflow-hidden">
           {branding.logoUrl ? (
             <img src={branding.logoUrl} alt={branding.shopName} className="h-9 w-9 object-cover" />
@@ -123,7 +148,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* User + collapse */}
+      {/* User panel + collapse toggle */}
       <div className="border-t border-sidebar-border p-3 space-y-2 shrink-0">
         {!collapsed && user && (
           <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-sidebar-accent">
@@ -134,12 +159,14 @@ export default function Sidebar() {
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-semibold text-white truncate">{user.name}</div>
-              <div className="text-xs text-sidebar-foreground/60 truncate capitalize">
-                {user.role.replace("_", " ")}
-              </div>
+              {/* Role badge */}
+              <span className={cn("inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-semibold leading-tight", ROLE_BADGE[role])}>
+                {ROLE_LABELS[role]}
+              </span>
             </div>
           </div>
         )}
+
         <div className={cn("flex gap-2", collapsed ? "flex-col" : "")}>
           <button
             onClick={() => { logout(); navigate("/login"); }}

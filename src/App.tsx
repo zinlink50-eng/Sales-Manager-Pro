@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -12,7 +12,28 @@ import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import Products from "@/pages/Products";
 import Sales from "@/pages/Sales";
+import { canAccess, HOME_ROUTE, type Role } from "@/lib/rbac";
 
+// ── Role guard – wraps individual route elements ──────────────
+function RoleGuard({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (!user) return null; // outer guard already handles unauthenticated
+  const role = user.role as Role;
+  if (!canAccess(role, location.pathname)) {
+    return <Navigate to={HOME_ROUTE[role]} replace />;
+  }
+  return <>{children}</>;
+}
+
+// ── Redirects to the role-specific home page ──────────────────
+function HomeRedirect() {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={HOME_ROUTE[user.role as Role]} replace />;
+}
+
+// ── All protected routes ──────────────────────────────────────
 function ProtectedRoutes() {
   const { user, isLoading } = useAuth();
 
@@ -34,39 +55,89 @@ function ProtectedRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Dashboard />} />
-        <Route path="sales" element={<Sales />} />
-        <Route path="products" element={<Products />} />
+        {/* Dashboard — admin & manager only */}
+        <Route
+          index
+          element={
+            <RoleGuard>
+              <Dashboard />
+            </RoleGuard>
+          }
+        />
+
+        {/* Sales & Customers — all roles */}
+        <Route path="sales"     element={<Sales />} />
         <Route path="customers" element={<Customers />} />
-        <Route path="tasks" element={<Tasks />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+        {/* Products — admin & manager */}
+        <Route
+          path="products"
+          element={
+            <RoleGuard>
+              <Products />
+            </RoleGuard>
+          }
+        />
+
+        {/* Tasks — admin only */}
+        <Route
+          path="tasks"
+          element={
+            <RoleGuard>
+              <Tasks />
+            </RoleGuard>
+          }
+        />
+
+        {/* Reports — admin & manager */}
+        <Route
+          path="reports"
+          element={
+            <RoleGuard>
+              <Reports />
+            </RoleGuard>
+          }
+        />
+
+        {/* Settings — admin only */}
+        <Route
+          path="settings"
+          element={
+            <RoleGuard>
+              <Settings />
+            </RoleGuard>
+          }
+        />
+
+        {/* Catch-all: redirect to role home */}
+        <Route path="*" element={<HomeRedirect />} />
       </Route>
     </Routes>
   );
 }
 
+// ── Public (login) route ──────────────────────────────────────
+function PublicRoute() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (user) return <Navigate to={HOME_ROUTE[user.role as Role]} replace />;
+  return <Login />;
+}
+
+// ── App root ──────────────────────────────────────────────────
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrandingProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<PublicRoute />} />
-            <Route path="/*" element={<ProtectedRoutes />} />
-          </Routes>
-        </BrowserRouter>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<PublicRoute />} />
+              <Route path="/*"    element={<ProtectedRoutes />} />
+            </Routes>
+          </BrowserRouter>
         </BrandingProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
-}
-
-function PublicRoute() {
-  const { user, isLoading } = useAuth();
-  if (isLoading) return null;
-  if (user) return <Navigate to="/" replace />;
-  return <Login />;
 }
