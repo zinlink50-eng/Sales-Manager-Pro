@@ -97,11 +97,14 @@ export interface Product {
   id: number;
   name: string;
   sku?: string;
+  barcode?: string;
   category: string;
   description?: string;
+  imageUrl?: string;
   price: number;
   cost?: number;
   stock?: number;
+  minStock?: number;
   unit: string;
   active: boolean;
   createdAt: string;

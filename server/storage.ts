@@ -1,6 +1,32 @@
 import type { User, Contact, Lead, Deal, PipelineStage, Task, Activity, Product, Sale, SaleItem } from "./types.js";
 
 // ──────────────────────────────────────────────────────────
+// SKU / Barcode auto-generation
+// ──────────────────────────────────────────────────────────
+const CAT_PREFIX: Record<string, string> = {
+  "မုန့်": "MNT", "အချိုရည်": "ACR", "ကိတ်": "KIT", "ပေါင်မုန့်": "PMT",
+  "သရေစာ": "TRS", "အိမ်သုံးပစ္စည်း": "AIM", "မီးဖိုချောင်သုံးပစ္စည်း": "MFC",
+  "စားသောက်ကုန်ခြောက်": "SKK", "ဆပ်ပြာနှင့်သန့်စင်ဆေးများ": "SPS",
+  "ကိုယ်ရေးကိုယ်တာသုံးပစ္စည်းများ": "KRK",
+  "Software": "SFT", "Hardware": "HWT", "Service": "SVC",
+  "Subscription": "SUB", "Consulting": "CNS",
+};
+
+export function generateSku(category: string, existingSkus: string[]): string {
+  const prefix = CAT_PREFIX[category] ?? (category.replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 3) || "PRD");
+  let n = 1;
+  while (existingSkus.includes(`${prefix}-${String(n).padStart(4, "0")}`)) n++;
+  return `${prefix}-${String(n).padStart(4, "0")}`;
+}
+
+export function generateBarcode(sku: string): string {
+  // Simple EAN-8-style barcode: prefix 200 + 5 digits from hash of sku
+  let hash = 0;
+  for (const c of sku) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
+  return "200" + String(hash % 100000).padStart(5, "0");
+}
+
+// ──────────────────────────────────────────────────────────
 // Seed data
 // ──────────────────────────────────────────────────────────
 
@@ -76,50 +102,50 @@ const activities: Activity[] = [
 ];
 
 const products: Product[] = [
-  { id: 1, name: "Enterprise CRM License",     sku: "CRM-ENT-001",  category: "Software",     description: "Full-featured CRM for enterprise teams",           price: 4500,  cost: 500,  stock: undefined, unit: "license",  active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
-  { id: 2, name: "Professional CRM License",   sku: "CRM-PRO-001",  category: "Software",     description: "CRM for growing sales teams",                      price: 1800,  cost: 200,  stock: undefined, unit: "license",  active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
-  { id: 3, name: "Starter CRM License",        sku: "CRM-STR-001",  category: "Software",     description: "Entry-level CRM for small teams",                  price: 600,   cost: 80,   stock: undefined, unit: "license",  active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
-  { id: 4, name: "Implementation Service",     sku: "SVC-IMPL-001", category: "Service",      description: "Onboarding and system setup service",               price: 2500,  cost: 800,  stock: 20,        unit: "project",  active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
-  { id: 5, name: "Training Package (5 seats)", sku: "SVC-TRN-005",  category: "Consulting",   description: "5-seat virtual training package",                  price: 1200,  cost: 300,  stock: 50,        unit: "package",  active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
-  { id: 6, name: "Annual Support Plan",        sku: "SUP-ANN-001",  category: "Subscription", description: "Priority email & phone support for 12 months",     price: 1500,  cost: 200,  stock: undefined, unit: "year",     active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
-  { id: 7, name: "Data Migration Service",     sku: "SVC-MIG-001",  category: "Service",      description: "Migrate data from legacy CRM",                     price: 3000,  cost: 1000, stock: 15,        unit: "project",  active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
-  { id: 8, name: "API Add-on",                 sku: "ADD-API-001",  category: "Software",     description: "REST API access for custom integrations",           price: 800,   cost: 100,  stock: undefined, unit: "license",  active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
-  { id: 9, name: "Server Hardware Bundle",     sku: "HW-SRV-001",   category: "Hardware",     description: "Dedicated server for on-premise deployment",        price: 8500,  cost: 5000, stock: 7,         unit: "unit",     active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
-  { id: 10, name: "Monthly SaaS Subscription", sku: "SAAS-MO-001",  category: "Subscription", description: "Per-seat monthly subscription",                    price: 49,    cost: 5,    stock: undefined, unit: "seat",     active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
+  { id: 1,  name: "ချောကလက်ကိတ်",       sku: "KIT-0001", barcode: "2000100001", category: "ကိတ်",                        description: "ချောကလက်ကရင်မ်ကိတ်",    imageUrl: "", price: 8500,   cost: 4000,  stock: 20,  minStock: 5,  unit: "ခု",    active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
+  { id: 2,  name: "ဗာနီလာကိတ်",          sku: "KIT-0002", barcode: "2000100002", category: "ကိတ်",                        description: "ဗာနီလာကရင်မ်ကိတ်",       imageUrl: "", price: 7500,   cost: 3500,  stock: 15,  minStock: 5,  unit: "ခု",    active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
+  { id: 3,  name: "ပေါင်မုန့်ဖြူ",        sku: "PMT-0001", barcode: "2000200001", category: "ပေါင်မုန့်",                  description: "ပုံမှန်ပေါင်မုန့်ဖြူ",     imageUrl: "", price: 1500,   cost: 700,   stock: 50,  minStock: 10, unit: "ဝင်",   active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
+  { id: 4,  name: "ပေါင်မုန့်ညိုမှောင်",   sku: "PMT-0002", barcode: "2000200002", category: "ပေါင်မုန့်",                  description: "ဂျုံမှောင်ပေါင်မုန့်",      imageUrl: "", price: 1800,   cost: 900,   stock: 30,  minStock: 10, unit: "ဝင်",   active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
+  { id: 5,  name: "သကြားလုံးမုန့်",        sku: "MNT-0001", barcode: "2000300001", category: "မုန့်",                       description: "သကြားထည့်မုန့်လုံး",      imageUrl: "", price: 500,    cost: 200,   stock: 100, minStock: 20, unit: "ခု",    active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
+  { id: 6,  name: "ကော်ဖီမုန့်",           sku: "MNT-0002", barcode: "2000300002", category: "မုန့်",                       description: "ကော်ဖီ ကရင်မ်မုန့်",       imageUrl: "", price: 800,    cost: 350,   stock: 60,  minStock: 15, unit: "ခု",    active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
+  { id: 7,  name: "လက်ဖက်ရည်အအေး",       sku: "ACR-0001", barcode: "2000400001", category: "အချိုရည်",                    description: "မြန်မာ့ရိုးရာလက်ဖက်ရည်", imageUrl: "", price: 1200,   cost: 400,   stock: 200, minStock: 30, unit: "ပုလင်း", active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
+  { id: 8,  name: "လိမ္မော်ရည်",            sku: "ACR-0002", barcode: "2000400002", category: "အချိုရည်",                    description: "လိမ္မော်သီးစစ်ရည်",        imageUrl: "", price: 1500,   cost: 500,   stock: 150, minStock: 30, unit: "ပုလင်း", active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
+  { id: 9,  name: "ချစ်ကောက်ကြော်",        sku: "TRS-0001", barcode: "2000500001", category: "သရေစာ",                       description: "ဆားရည်ပတ်ချစ်ကောက်ကြော်", imageUrl: "", price: 2500,   cost: 1000,  stock: 80,  minStock: 20, unit: "ထုပ်",  active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
+  { id: 10, name: "ကွမ်းသီးဖတ်ပြားကြော်",  sku: "TRS-0002", barcode: "2000500002", category: "သရေစာ",                       description: "ကွမ်းသီးဖတ်ပြားကြော်",     imageUrl: "", price: 1800,   cost: 700,   stock: 3,   minStock: 10, unit: "ထုပ်",  active: true, createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z" },
 ];
 
 const sales: Sale[] = [
   {
     id: 1, contactId: 4, assignedTo: 4, status: "delivered", date: "2026-07-01",
     items: [
-      { productId: 1, productName: "Enterprise CRM License", quantity: 1, unitPrice: 4500 },
-      { productId: 4, productName: "Implementation Service",  quantity: 1, unitPrice: 2500 },
-      { productId: 6, productName: "Annual Support Plan",     quantity: 1, unitPrice: 1500 },
+      { productId: 1, productName: "ချောကလက်ကိတ်",    quantity: 2, unitPrice: 8500 },
+      { productId: 3, productName: "ပေါင်မုန့်ဖြူ",     quantity: 5, unitPrice: 1500 },
+      { productId: 7, productName: "လက်ဖက်ရည်အအေး",  quantity: 4, unitPrice: 1200 },
     ],
-    total: 8500, notes: "Finance Plus initial deployment package", createdAt: "2026-07-01T10:00:00Z",
+    total: 29300, notes: "နေ့ပိုင်း မှာယူမှု", createdAt: "2026-07-01T10:00:00Z",
   },
   {
     id: 2, contactId: 1, assignedTo: 3, status: "confirmed", date: "2026-07-15",
     items: [
-      { productId: 5, productName: "Training Package (5 seats)", quantity: 2, unitPrice: 1200 },
-      { productId: 8, productName: "API Add-on",                 quantity: 1, unitPrice: 800 },
+      { productId: 5, productName: "သကြားလုံးမုန့်", quantity: 10, unitPrice: 500 },
+      { productId: 8, productName: "လိမ္မော်ရည်",    quantity: 3,  unitPrice: 1500 },
     ],
-    total: 3200, createdAt: "2026-07-15T10:00:00Z",
+    total: 9500, createdAt: "2026-07-15T10:00:00Z",
   },
   {
     id: 3, contactId: 7, assignedTo: 3, status: "pending", date: "2026-07-28",
     items: [
-      { productId: 2, productName: "Professional CRM License", quantity: 3, unitPrice: 1800 },
-      { productId: 7, productName: "Data Migration Service",   quantity: 1, unitPrice: 3000 },
+      { productId: 2, productName: "ဗာနီလာကိတ်",       quantity: 1, unitPrice: 7500 },
+      { productId: 9, productName: "ချစ်ကောက်ကြော်",   quantity: 2, unitPrice: 2500 },
     ],
-    total: 8400, notes: "ManufacturePlus pilot deployment", createdAt: "2026-07-28T10:00:00Z",
+    total: 12500, notes: "အမှာပေးပြီး", createdAt: "2026-07-28T10:00:00Z",
   },
   {
     id: 4, contactId: 6, assignedTo: 4, status: "confirmed", date: "2026-07-30",
     items: [
-      { productId: 3, productName: "Starter CRM License", quantity: 1, unitPrice: 600 },
+      { productId: 6, productName: "ကော်ဖီမုန့်", quantity: 3, unitPrice: 800 },
     ],
-    total: 600, createdAt: "2026-07-30T10:00:00Z",
+    total: 2400, createdAt: "2026-07-30T10:00:00Z",
   },
 ];
 
@@ -136,6 +162,7 @@ let branding = {
 // Counters for auto-increment IDs
 // ──────────────────────────────────────────────────────────
 const nextId = { contacts: 9, leads: 9, deals: 8, tasks: 8, activities: 11, products: 11, sales: 5 };
+const allSkus = () => products.map((p) => p.sku).filter(Boolean) as string[];
 
 // ──────────────────────────────────────────────────────────
 // DB helpers
@@ -241,7 +268,9 @@ export const db = {
   getProductById: (id: number) => products.find((p) => p.id === id),
   createProduct:  (data: Omit<Product, "id" | "createdAt" | "updatedAt">) => {
     const now = new Date().toISOString();
-    const p: Product = { ...data, id: nextId.products++, createdAt: now, updatedAt: now };
+    const sku = data.sku?.trim() || generateSku(data.category, allSkus());
+    const barcode = data.barcode?.trim() || generateBarcode(sku);
+    const p: Product = { ...data, sku, barcode, id: nextId.products++, createdAt: now, updatedAt: now };
     products.push(p); return p;
   },
   updateProduct:  (id: number, data: Partial<Product>) => {
