@@ -1,4 +1,4 @@
-import { Bell, Search, Plus } from "lucide-react";
+import { Bell, Search, Plus, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocation, Link } from "react-router-dom";
@@ -16,12 +16,27 @@ const pageMeta: Record<string, { title: string; subtitle: string; action?: { lab
   "/settings": { title: "ဆက်တင်", subtitle: "စနစ်ဆက်တင်ပြင်ဆင်မည်" },
 };
 
-export default function Header() {
+interface HeaderProps {
+  onMenuToggle: () => void;
+}
+
+export default function Header({ onMenuToggle }: HeaderProps) {
   const location = useLocation();
   const meta = pageMeta[location.pathname] ?? { title: "Sales Manager Pro", subtitle: "" };
 
   return (
-    <header className="h-16 border-b bg-white flex items-center px-6 gap-4 shrink-0">
+    <header className="h-16 border-b bg-white flex items-center px-4 gap-3 shrink-0">
+      {/* Hamburger — mobile only */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden shrink-0"
+        onClick={onMenuToggle}
+        aria-label="Toggle menu"
+      >
+        <Menu className="h-5 w-5 text-gray-600" />
+      </Button>
+
       <div className="flex-1 min-w-0">
         <h1 className="text-lg font-semibold text-gray-900 leading-tight">{meta.title}</h1>
         <p className="text-xs text-gray-500 leading-tight">{meta.subtitle}</p>
@@ -45,7 +60,7 @@ export default function Header() {
           <Link to={meta.action.to}>
             <Button size="sm" className="gap-1.5 ml-1">
               <Plus className="h-4 w-4" />
-              {meta.action.label}
+              <span className="hidden sm:inline">{meta.action.label}</span>
             </Button>
           </Link>
         )}

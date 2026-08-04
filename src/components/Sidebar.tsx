@@ -1,8 +1,8 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Users, UserCheck, TrendingUp, CheckSquare,
   BarChart3, Settings, LogOut, Target, ChevronLeft, ChevronRight,
-  Package, ShoppingCart,
+  Package, ShoppingCart, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,12 +56,17 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  mobileOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ mobileOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const { branding } = useBranding();
   const [collapsed, setCollapsed] = useState(false);
+  const navigate = useNavigate();
 
-  // Derive short initials from shop name for the logo fallback
   const shopInitials = branding.shopName
     .split(/\s+/)
     .map((w) => w[0])
@@ -69,15 +74,19 @@ export default function Sidebar() {
     .toUpperCase()
     .slice(0, 2) || "SM";
 
-  return (
+  const sidebarContent = (
     <aside
       className={cn(
-        "flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 shrink-0",
-        collapsed ? "w-16" : "w-60"
+        "flex flex-col h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300",
+        // Desktop: shrink-0 in the flex row, collapsible width
+        "md:shrink-0",
+        collapsed ? "md:w-16" : "md:w-60",
+        // Mobile: always full width inside the drawer
+        "w-60"
       )}
     >
       {/* Logo / Shop Branding */}
-      <div className={cn("flex items-center h-16 px-4 border-b border-sidebar-border shrink-0", collapsed ? "justify-center" : "gap-3")}>
+      <div className={cn("flex items-center h-16 px-4 border-b border-sidebar-border shrink-0", collapsed ? "md:justify-center" : "gap-3")}>
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-white font-bold text-sm overflow-hidden">
           {branding.logoUrl ? (
             <img src={branding.logoUrl} alt={branding.shopName} className="h-9 w-9 object-cover" />
@@ -85,35 +94,41 @@ export default function Sidebar() {
             shopInitials
           )}
         </div>
-        {!collapsed && (
-          <div className="min-w-0">
-            <div className="text-sm font-bold text-white leading-tight truncate">{branding.shopName}</div>
-            <div className="text-xs text-sidebar-foreground/60 truncate">{branding.shopTagline}</div>
-          </div>
-        )}
+        {/* Always show name on mobile; respect collapsed on desktop */}
+        <div className={cn("min-w-0", collapsed ? "md:hidden" : "")}>
+          <div className="text-sm font-bold text-white leading-tight truncate">{branding.shopName}</div>
+          <div className="text-xs text-sidebar-foreground/60 truncate">{branding.shopTagline}</div>
+        </div>
+        {/* Close button — mobile only */}
+        <button
+          onClick={onClose}
+          className="ml-auto md:hidden flex items-center justify-center p-1 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors"
+          aria-label="Close menu"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
         {navGroups.map((group) => (
           <div key={group.label}>
-            {!collapsed && (
-              <div className="px-3 pb-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-                  {group.label}
-                </span>
-              </div>
-            )}
+            <div className={cn("px-3 pb-1", collapsed ? "md:hidden" : "")}>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                {group.label}
+              </span>
+            </div>
             <div className="space-y-0.5">
               {group.items.map(({ to, label, icon: Icon, end = false }) => (
                 <NavLink
                   key={to}
                   to={to}
                   end={end}
+                  onClick={onClose}
                   className={({ isActive }) =>
                     cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                      collapsed ? "justify-center" : "",
+                      collapsed ? "md:justify-center" : "",
                       isActive
                         ? "bg-sidebar-primary text-white shadow-sm"
                         : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -122,7 +137,7 @@ export default function Sidebar() {
                   title={collapsed ? label : undefined}
                 >
                   <Icon className="h-[18px] w-[18px] shrink-0" />
-                  {!collapsed && <span>{label}</span>}
+                  <span className={cn(collapsed ? "md:hidden" : "")}>{label}</span>
                 </NavLink>
               ))}
             </div>
@@ -132,8 +147,8 @@ export default function Sidebar() {
 
       {/* User + collapse */}
       <div className="border-t border-sidebar-border p-3 space-y-2 shrink-0">
-        {!collapsed && user && (
-          <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-sidebar-accent">
+        {user && (
+          <div className={cn("flex items-center gap-2 px-2 py-2 rounded-lg bg-sidebar-accent", collapsed ? "md:hidden" : "")}>
             <Avatar className="h-8 w-8 shrink-0">
               <AvatarFallback className="text-xs bg-sidebar-primary text-white">
                 {getInitials(user.name)}
@@ -147,21 +162,22 @@ export default function Sidebar() {
             </div>
           </div>
         )}
-        <div className={cn("flex gap-2", collapsed ? "flex-col" : "")}>
+        <div className={cn("flex gap-2", collapsed ? "md:flex-col" : "")}>
           <button
-            onClick={logout}
+            onClick={() => { logout(); navigate("/login"); }}
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors",
-              collapsed ? "justify-center w-full" : "flex-1"
+              collapsed ? "md:justify-center md:w-full" : "flex-1"
             )}
             title="ထွက်မည်"
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>ထွက်မည်</span>}
+            <span className={cn(collapsed ? "md:hidden" : "")}>ထွက်မည်</span>
           </button>
+          {/* Collapse toggle — desktop only */}
           <button
             onClick={() => setCollapsed((c) => !c)}
-            className="flex items-center justify-center p-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors"
+            className="hidden md:flex items-center justify-center p-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors"
             title={collapsed ? "ချဲ့မည်" : "ခေါ်ရင်ခြုံ့မည်"}
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
@@ -169,5 +185,30 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar — always visible, sits in the flex row */}
+      <div className="hidden md:flex">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile sidebar — overlay drawer */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={onClose}
+            aria-hidden="true"
+          />
+          {/* Drawer */}
+          <div className="relative z-10 flex h-full">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
