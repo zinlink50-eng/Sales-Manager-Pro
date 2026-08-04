@@ -98,7 +98,7 @@ export default function Dashboard() {
           icon={Target}
         />
         <KpiCard
-          title="ပြောင်းလဲမှုနှုန်း"
+          title="ပြောင်းနှုန်း"
           value={`${stats?.conversionRate ?? 0}%`}
           growth={stats?.conversionGrowth ?? 0}
           icon={Percent}
@@ -141,7 +141,7 @@ export default function Dashboard() {
         {/* Pipeline Funnel */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">ဈေးကွက်စီမံ နိဒါန်း</CardTitle>
+            <CardTitle className="text-base">ဈေးကွက်အနေအထား</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

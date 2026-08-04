@@ -12,7 +12,7 @@ import { useState } from "react";
 
 const navGroups = [
   {
-    label: "ခြုံငုံသုံးသပ်ချက်",
+    label: "ပင်မ",
     items: [
       { to: "/", label: "ပင်မစာမျက်နှာ", icon: LayoutDashboard, end: true },
     ],
@@ -22,28 +22,28 @@ const navGroups = [
     items: [
       { to: "/leads", label: "လိဒ်များ", icon: Target },
       { to: "/contacts", label: "အဆက်အသွယ်များ", icon: Users },
-      { to: "/deals", label: "ဈေးကွက်စီမံ", icon: TrendingUp },
+      { to: "/deals", label: "ဈေးကွက်", icon: TrendingUp },
       { to: "/customers", label: "ဖောက်သည်များ", icon: UserCheck },
     ],
   },
   {
-    label: "ကုန်လက်ကျန်",
+    label: "ကုန်နှင့်ရောင်း",
     items: [
       { to: "/products", label: "ကုန်ပစ္စည်းများ", icon: Package },
-      { to: "/sales", label: "အရောင်းမှာယူမှုများ", icon: ShoppingCart },
+      { to: "/sales", label: "အရောင်းစာရင်း", icon: ShoppingCart },
     ],
   },
   {
-    label: "ထုတ်လုပ်နိုင်မှု",
+    label: "လုပ်ငန်း",
     items: [
-      { to: "/tasks", label: "လုပ်ဆောင်ချက်များ", icon: CheckSquare },
-      { to: "/reports", label: "အစီရင်ခံစာများ", icon: BarChart3 },
+      { to: "/tasks", label: "လုပ်စရာများ", icon: CheckSquare },
+      { to: "/reports", label: "အစီရင်ခံ", icon: BarChart3 },
     ],
   },
   {
     label: "စနစ်",
     items: [
-      { to: "/settings", label: "ဆက်တင်များ", icon: Settings },
+      { to: "/settings", label: "ဆက်တင်", icon: Settings },
     ],
   },
 ];
