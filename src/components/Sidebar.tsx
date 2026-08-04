@@ -1,0 +1,152 @@
+import { NavLink } from "react-router-dom";
+import {
+  LayoutDashboard, Users, UserCheck, TrendingUp, CheckSquare,
+  BarChart3, Settings, LogOut, Target, ChevronLeft, ChevronRight,
+  Package, ShoppingCart,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getInitials } from "@/lib/utils";
+import { useState } from "react";
+
+const navGroups = [
+  {
+    label: "Overview",
+    items: [
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+    ],
+  },
+  {
+    label: "Sales",
+    items: [
+      { to: "/leads", label: "Leads", icon: Target },
+      { to: "/contacts", label: "Contacts", icon: Users },
+      { to: "/deals", label: "Pipeline", icon: TrendingUp },
+      { to: "/customers", label: "Customers", icon: UserCheck },
+    ],
+  },
+  {
+    label: "Inventory",
+    items: [
+      { to: "/products", label: "Products", icon: Package },
+      { to: "/sales", label: "Sales Orders", icon: ShoppingCart },
+    ],
+  },
+  {
+    label: "Productivity",
+    items: [
+      { to: "/tasks", label: "Tasks", icon: CheckSquare },
+      { to: "/reports", label: "Reports", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { to: "/settings", label: "Settings", icon: Settings },
+    ],
+  },
+];
+
+export default function Sidebar() {
+  const { user, logout } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <aside
+      className={cn(
+        "flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 shrink-0",
+        collapsed ? "w-16" : "w-60"
+      )}
+    >
+      {/* Logo */}
+      <div className={cn("flex items-center h-16 px-4 border-b border-sidebar-border shrink-0", collapsed ? "justify-center" : "gap-3")}>
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-white font-bold text-sm">
+          SM
+        </div>
+        {!collapsed && (
+          <div>
+            <div className="text-sm font-bold text-white leading-tight">Sales Manager</div>
+            <div className="text-xs text-sidebar-foreground/60">Pro Edition</div>
+          </div>
+        )}
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            {!collapsed && (
+              <div className="px-3 pb-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+                  {group.label}
+                </span>
+              </div>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map(({ to, label, icon: Icon, end }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      collapsed ? "justify-center" : "",
+                      isActive
+                        ? "bg-sidebar-primary text-white shadow-sm"
+                        : "text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )
+                  }
+                  title={collapsed ? label : undefined}
+                >
+                  <Icon className="h-[18px] w-[18px] shrink-0" />
+                  {!collapsed && <span>{label}</span>}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      {/* User + collapse */}
+      <div className="border-t border-sidebar-border p-3 space-y-2 shrink-0">
+        {!collapsed && user && (
+          <div className="flex items-center gap-2 px-2 py-2 rounded-lg bg-sidebar-accent">
+            <Avatar className="h-8 w-8 shrink-0">
+              <AvatarFallback className="text-xs bg-sidebar-primary text-white">
+                {getInitials(user.name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold text-white truncate">{user.name}</div>
+              <div className="text-xs text-sidebar-foreground/60 truncate capitalize">
+                {user.role.replace("_", " ")}
+              </div>
+            </div>
+          </div>
+        )}
+        <div className={cn("flex gap-2", collapsed ? "flex-col" : "")}>
+          <button
+            onClick={logout}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors",
+              collapsed ? "justify-center w-full" : "flex-1"
+            )}
+            title="Logout"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Logout</span>}
+          </button>
+          <button
+            onClick={() => setCollapsed((c) => !c)}
+            className="flex items-center justify-center p-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors"
+            title={collapsed ? "Expand" : "Collapse"}
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+}
