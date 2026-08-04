@@ -306,14 +306,17 @@ export const db = {
 
   // Dashboard
   getDashboardStats: () => {
-    const closedWon = deals.filter((d) => d.stage === "Closed Won");
-    const active    = deals.filter((d) => !["Closed Won", "Closed Lost"].includes(d.stage));
-    const totalRevenue = closedWon.reduce((s, d) => s + d.value, 0);
-    const pipelineValue = active.reduce((s, d) => s + d.value * (d.probability / 100), 0);
-    const recent30 = leads.filter((l) => (Date.now() - new Date(l.createdAt).getTime()) / 864e5 <= 30);
-    const converted = leads.filter((l) => l.status === "converted");
-    const convRate  = leads.length > 0 ? Math.round((converted.length / leads.length) * 100) : 0;
-    return { totalRevenue, revenueGrowth: 18.5, activeDeals: active.length, dealsGrowth: 12.3, newLeads: recent30.length, leadsGrowth: 7.8, conversionRate: convRate, conversionGrowth: 3.2, pipelineValue: Math.round(pipelineValue) };
+    const confirmedSales = sales.filter((s) => s.status === "confirmed" || s.status === "delivered");
+    const totalRevenue   = confirmedSales.reduce((sum, s) => sum + s.total, 0);
+    const salesCount     = sales.length;
+    const uniqueCustomers = new Set(sales.map((s) => s.contactId).filter(Boolean)).size;
+    const lowStockItems  = products.filter((p) => p.stock !== undefined && p.minStock !== undefined && p.stock < p.minStock).length;
+    return {
+      totalRevenue,   revenueGrowth:   18.5,
+      salesCount,     salesGrowth:     12.3,
+      totalCustomers: uniqueCustomers, customersGrowth: 8.0,
+      lowStockItems,
+    };
   },
 
   getRevenueData: () => {

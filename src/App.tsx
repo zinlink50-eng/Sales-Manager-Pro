@@ -6,9 +6,6 @@ import { BrandingProvider } from "@/contexts/BrandingContext";
 import Layout from "@/components/Layout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
-import Leads from "@/pages/Leads";
-import Contacts from "@/pages/Contacts";
-import Deals from "@/pages/Deals";
 import Customers from "@/pages/Customers";
 import Tasks from "@/pages/Tasks";
 import Reports from "@/pages/Reports";
@@ -26,7 +23,7 @@ function ProtectedRoutes() {
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center animate-pulse">
             <div className="h-5 w-5 bg-primary rounded" />
           </div>
-          <p className="text-sm text-muted-foreground">Loading Sales Manager Pro…</p>
+          <p className="text-sm text-muted-foreground">Loading…</p>
         </div>
       </div>
     );
@@ -38,12 +35,9 @@ function ProtectedRoutes() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
-        <Route path="leads" element={<Leads />} />
-        <Route path="contacts" element={<Contacts />} />
-        <Route path="deals" element={<Deals />} />
-        <Route path="customers" element={<Customers />} />
-        <Route path="products" element={<Products />} />
         <Route path="sales" element={<Sales />} />
+        <Route path="products" element={<Products />} />
+        <Route path="customers" element={<Customers />} />
         <Route path="tasks" element={<Tasks />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />

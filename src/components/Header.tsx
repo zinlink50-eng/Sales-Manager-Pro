@@ -1,45 +1,27 @@
-import { Bell, Search, Plus, Menu } from "lucide-react";
+import { Bell, Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocation, Link } from "react-router-dom";
 
 const pageMeta: Record<string, { title: string; subtitle: string; action?: { label: string; to: string } }> = {
-  "/": { title: "ပင်မစာမျက်နှာ", subtitle: "အရောင်းအနေအထားကို ချက်ချင်းကြည့်ရှုနိုင်သည်" },
-  "/leads": { title: "လိဒ်များ", subtitle: "လာရောက်သောလိဒ်များ ကြည့်ရှုစီမံမည်", action: { label: "လိဒ်ထည့်မည်", to: "/leads?new=true" } },
-  "/contacts": { title: "အဆက်အသွယ်များ", subtitle: "အဆက်အသွယ်များ ကြည့်ရှုစီမံမည်", action: { label: "အဆက်အသွယ်ထည့်မည်", to: "/contacts?new=true" } },
-  "/deals": { title: "ဈေးကွက်", subtitle: "ဈေးကွက်များ ကြည့်ရှုမည်", action: { label: "ဈေးကွက်ထည့်မည်", to: "/deals?new=true" } },
-  "/customers": { title: "ဖောက်သည်များ", subtitle: "ရောင်းပြီးသောဖောက်သည်များ" },
-  "/products": { title: "ကုန်ပစ္စည်းများ", subtitle: "ကုန်ပစ္စည်းစာရင်း ကြည့်ရှုစီမံမည်", action: { label: "ကုန်ပစ္စည်းထည့်မည်", to: "/products?new=true" } },
-  "/sales": { title: "အရောင်းစာရင်း", subtitle: "အရောင်းမှတ်တမ်းများ ကြည့်ရှုမည်", action: { label: "အရောင်းထည့်မည်", to: "/sales?new=true" } },
-  "/tasks": { title: "လုပ်စရာများ", subtitle: "လုပ်စရာများ စီမံမည်", action: { label: "လုပ်စရာထည့်မည်", to: "/tasks?new=true" } },
-  "/reports": { title: "အစီရင်ခံ", subtitle: "အရောင်းအချက်အလက်နှင့် စစ်ဆေးချက်" },
-  "/settings": { title: "ဆက်တင်", subtitle: "စနစ်ဆက်တင်ပြင်ဆင်မည်" },
+  "/":          { title: "ပင်မစာမျက်နှာ",   subtitle: "အရောင်းအနေအထားကို ချက်ချင်းကြည့်ရှုနိုင်သည်" },
+  "/sales":     { title: "အရောင်းစာမျက်နှာ", subtitle: "POS အရောင်းမှတ်တမ်း", action: { label: "အရောင်းထည့်မည်", to: "/sales?new=true" } },
+  "/products":  { title: "ကုန်ပစ္စည်းများ",   subtitle: "ကုန်ပစ္စည်းစာရင်း ကြည့်ရှုစီမံမည်", action: { label: "ကုန်ပစ္စည်းထည့်မည်", to: "/products?new=true" } },
+  "/customers": { title: "ဖောက်သည်များ",      subtitle: "ဖောက်သည်မှတ်တမ်းများ" },
+  "/tasks":     { title: "လုပ်စရာများ",        subtitle: "လုပ်စရာများ စီမံမည်", action: { label: "လုပ်စရာထည့်မည်", to: "/tasks?new=true" } },
+  "/reports":   { title: "အစီရင်ခံစာ",        subtitle: "အရောင်းအချက်အလက်နှင့် စစ်ဆေးချက်" },
+  "/settings":  { title: "ဆက်တင်",            subtitle: "စနစ်ဆက်တင်ပြင်ဆင်မည်" },
 };
 
-interface HeaderProps {
-  onMenuToggle: () => void;
-}
-
-export default function Header({ onMenuToggle }: HeaderProps) {
+export default function Header() {
   const location = useLocation();
   const meta = pageMeta[location.pathname] ?? { title: "Sales Manager Pro", subtitle: "" };
 
   return (
-    <header className="h-16 border-b bg-white flex items-center px-4 gap-3 shrink-0">
-      {/* Hamburger — mobile only */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="md:hidden shrink-0"
-        onClick={onMenuToggle}
-        aria-label="Toggle menu"
-      >
-        <Menu className="h-5 w-5 text-gray-600" />
-      </Button>
-
+    <header className="h-16 border-b bg-white flex items-center px-4 md:px-6 gap-4 shrink-0">
       <div className="flex-1 min-w-0">
         <h1 className="text-lg font-semibold text-gray-900 leading-tight">{meta.title}</h1>
-        <p className="text-xs text-gray-500 leading-tight">{meta.subtitle}</p>
+        <p className="text-xs text-gray-500 leading-tight hidden sm:block">{meta.subtitle}</p>
       </div>
 
       <div className="flex items-center gap-2">

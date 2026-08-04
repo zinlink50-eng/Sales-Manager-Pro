@@ -1,37 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { DashboardStats, RevenueData, PipelineFunnelData, Activity } from "@/types";
+import type { DashboardStats, RevenueData, Activity, Sale, Product } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  TrendingUp, TrendingDown, DollarSign, Users, Target, Percent,
-  Phone, Mail, Calendar, FileText, CheckCircle, Star, Briefcase,
+  TrendingUp, TrendingDown, DollarSign, Users, ShoppingCart, AlertTriangle,
+  Phone, Mail, Calendar, FileText, CheckCircle, Package,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, FunnelChart, Funnel, LabelList,
+  Tooltip, ResponsiveContainer,
 } from "recharts";
-import { formatCurrency, formatRelativeDate, getInitials } from "@/lib/utils";
+import { formatCurrency, formatRelativeDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 const activityIcons: Record<string, { icon: React.ElementType; color: string }> = {
-  call: { icon: Phone, color: "text-blue-500 bg-blue-50" },
-  email: { icon: Mail, color: "text-purple-500 bg-purple-50" },
-  meeting: { icon: Calendar, color: "text-green-500 bg-green-50" },
-  note: { icon: FileText, color: "text-gray-500 bg-gray-50" },
-  deal_created: { icon: Briefcase, color: "text-indigo-500 bg-indigo-50" },
-  deal_updated: { icon: TrendingUp, color: "text-amber-500 bg-amber-50" },
-  lead_created: { icon: Target, color: "text-cyan-500 bg-cyan-50" },
-  contact_created: { icon: Users, color: "text-pink-500 bg-pink-50" },
-  task_completed: { icon: CheckCircle, color: "text-emerald-500 bg-emerald-50" },
+  call:           { icon: Phone,         color: "text-blue-500 bg-blue-50"    },
+  email:          { icon: Mail,          color: "text-purple-500 bg-purple-50" },
+  meeting:        { icon: Calendar,      color: "text-green-500 bg-green-50"  },
+  note:           { icon: FileText,      color: "text-gray-500 bg-gray-50"    },
+  deal_created:   { icon: ShoppingCart,  color: "text-indigo-500 bg-indigo-50"},
+  task_completed: { icon: CheckCircle,   color: "text-emerald-500 bg-emerald-50" },
 };
 
-function KpiCard({
-  title, value, growth, icon: Icon,
-}: {
-  title: string; value: number | string; growth: number;
-  icon: React.ElementType;
+function KpiCard({ title, value, growth, icon: Icon }: {
+  title: string; value: number | string; growth: number; icon: React.ElementType;
 }) {
   const isPositive = growth >= 0;
   return (
@@ -58,27 +50,33 @@ function KpiCard({
 }
 
 export default function Dashboard() {
-  const { data: stats } = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: () => api.get<DashboardStats>("/api/dashboard/stats"),
-  });
-  const { data: revenue } = useQuery({
-    queryKey: ["dashboard-revenue"],
-    queryFn: () => api.get<RevenueData[]>("/api/dashboard/revenue"),
-  });
-  const { data: funnel } = useQuery({
-    queryKey: ["dashboard-funnel"],
-    queryFn: () => api.get<PipelineFunnelData[]>("/api/dashboard/pipeline-funnel"),
-  });
-  const { data: activities } = useQuery({
-    queryKey: ["dashboard-activities"],
-    queryFn: () => api.get<Activity[]>("/api/dashboard/activities"),
-  });
+  const { data: stats }      = useQuery({ queryKey: ["dashboard-stats"],    queryFn: () => api.get<DashboardStats>("/api/dashboard/stats") });
+  const { data: revenue }    = useQuery({ queryKey: ["dashboard-revenue"],  queryFn: () => api.get<RevenueData[]>("/api/dashboard/revenue") });
+  const { data: activities } = useQuery({ queryKey: ["dashboard-activities"], queryFn: () => api.get<Activity[]>("/api/dashboard/activities") });
+  const { data: products = [] } = useQuery({ queryKey: ["products"],         queryFn: () => api.get<Product[]>("/api/products") });
+  const { data: sales = [] }    = useQuery({ queryKey: ["sales"],            queryFn: () => api.get<Sale[]>("/api/sales") });
+
+  // Top 5 products by quantity sold
+  const productSales = sales
+    .flatMap((s) => s.items ?? [])
+    .reduce((acc, item) => {
+      acc[item.productName] = (acc[item.productName] || 0) + item.quantity;
+      return acc;
+    }, {} as Record<string, number>);
+  const topProducts = Object.entries(productSales)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([name, qty]) => ({ name, qty }));
+
+  // Low-stock products
+  const lowStock = products.filter(
+    (p) => p.stock !== undefined && p.minStock !== undefined && p.stock < p.minStock
+  );
 
   return (
     <div className="space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           title="စုစုပေါင်းဝင်ငွေ"
           value={stats ? formatCurrency(stats.totalRevenue) : "—"}
@@ -86,22 +84,22 @@ export default function Dashboard() {
           icon={DollarSign}
         />
         <KpiCard
-          title="လက်ရှိဈေးကွက်"
-          value={stats?.activeDeals ?? 0}
-          growth={stats?.dealsGrowth ?? 0}
-          icon={Briefcase}
+          title="အရောင်းစုစုပေါင်း"
+          value={stats?.salesCount ?? 0}
+          growth={stats?.salesGrowth ?? 0}
+          icon={ShoppingCart}
         />
         <KpiCard
-          title="လိဒ်အသစ် (ရက် ၃၀)"
-          value={stats?.newLeads ?? 0}
-          growth={stats?.leadsGrowth ?? 0}
-          icon={Target}
+          title="ဖောက်သည်စုစုပေါင်း"
+          value={stats?.totalCustomers ?? 0}
+          growth={stats?.customersGrowth ?? 0}
+          icon={Users}
         />
         <KpiCard
-          title="ပြောင်းနှုန်း"
-          value={`${stats?.conversionRate ?? 0}%`}
-          growth={stats?.conversionGrowth ?? 0}
-          icon={Percent}
+          title="ကုန်ပြတ်လုနီး"
+          value={stats?.lowStockItems ?? 0}
+          growth={-(stats?.lowStockItems ?? 0)}
+          icon={AlertTriangle}
         />
       </div>
 
@@ -110,7 +108,7 @@ export default function Dashboard() {
         {/* Revenue Chart */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">ဝင်ငွေ နှင့် ပန်းတိုင်</CardTitle>
+            <CardTitle className="text-base">လစဉ်ဝင်ငွေ နှင့် ပန်းတိုင်</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
@@ -125,53 +123,45 @@ export default function Dashboard() {
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Area
-                  type="monotone" dataKey="revenue" stroke="#3b82f6"
-                  fill="url(#colorRevenue)" strokeWidth={2} name="ဝင်ငွေ"
-                />
-                <Area
-                  type="monotone" dataKey="target" stroke="#e5e7eb"
-                  fill="none" strokeWidth={2} strokeDasharray="4 2" name="ပန်းတိုင်"
-                />
+                <Area type="monotone" dataKey="revenue" stroke="#3b82f6" fill="url(#colorRevenue)" strokeWidth={2} name="ဝင်ငွေ" />
+                <Area type="monotone" dataKey="target"  stroke="#e5e7eb" fill="none" strokeWidth={2} strokeDasharray="4 2" name="ပန်းတိုင်" />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Pipeline Funnel */}
+        {/* Top Selling Products */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">ဈေးကွက်အနေအထား</CardTitle>
+            <CardTitle className="text-base">အရောင်းရဆုံးကုန်ပစ္စည်း</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {funnel?.map((item, i) => {
-                const maxVal = funnel[0]?.value || 1;
-                const pct = Math.round((item.value / maxVal) * 100);
-                const colors = ["bg-indigo-500", "bg-violet-500", "bg-blue-500", "bg-amber-500"];
-                return (
-                  <div key={item.stage} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="font-medium text-gray-700">{item.stage}</span>
-                      <span className="text-gray-500">{item.count} ဈေးကွက် · {formatCurrency(item.value)}</span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className={cn("h-full rounded-full transition-all", colors[i % colors.length])}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {stats && (
-              <div className="mt-4 pt-4 border-t">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">ဝင်ငွေ ခန့်မှန်းချက်</span>
-                  <span className="text-sm font-bold text-primary">{formatCurrency(stats.pipelineValue)}</span>
+            {topProducts.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={topProducts} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis type="number" tick={{ fontSize: 10 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={80} />
+                  <Tooltip formatter={(v: number) => [`${v} ခု`, "ရောင်းချမှု"]} />
+                  <Bar dataKey="qty" fill="#6366f1" radius={[0, 4, 4, 0]} name="ရောင်းချမှု" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="py-8 text-center text-sm text-gray-400">ရောင်းချမှုမရှိသေး</div>
+            )}
+            {/* Low stock alert */}
+            {lowStock.length > 0 && (
+              <div className="mt-3 pt-3 border-t space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-600">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  ကုန်ပြတ်လုနီး ({lowStock.length} မျိုး)
                 </div>
+                {lowStock.slice(0, 3).map((p) => (
+                  <div key={p.id} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1 text-gray-600"><Package className="h-3 w-3" />{p.name}</span>
+                    <span className="text-red-500 font-medium">{p.stock} {p.unit}</span>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>
@@ -206,6 +196,9 @@ export default function Dashboard() {
                 </div>
               );
             })}
+            {!activities?.length && (
+              <p className="text-sm text-center text-gray-400 py-4">လှုပ်ရှားမှုမရှိသေး</p>
+            )}
           </div>
         </CardContent>
       </Card>

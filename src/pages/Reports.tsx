@@ -1,81 +1,86 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Deal, Lead, Contact, RevenueData, PipelineFunnelData, DashboardStats } from "@/types";
+import type { Sale, Product, RevenueData, DashboardStats } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Legend, FunnelChart, Funnel, LabelList,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { TrendingUp, TrendingDown, DollarSign, Users, Target, Award } from "lucide-react";
+import { DollarSign, ShoppingCart, Package, TrendingUp } from "lucide-react";
 
 const COLORS = ["#6366f1", "#8b5cf6", "#3b82f6", "#f59e0b", "#10b981", "#ef4444"];
 
+const statusConfig: Record<string, { label: string; variant: any }> = {
+  pending:   { label: "စောင့်ဆိုင်းနေ", variant: "warning"     },
+  confirmed: { label: "အတည်ပြုပြီ",    variant: "info"        },
+  delivered: { label: "ပို့ဆောင်ပြီ",   variant: "success"     },
+  cancelled: { label: "ပယ်ဖျက်ပြီ",    variant: "destructive" },
+};
+
 export default function Reports() {
-  const { data: stats } = useQuery({ queryKey: ["dashboard-stats"], queryFn: () => api.get<DashboardStats>("/api/dashboard/stats") });
-  const { data: revenue } = useQuery({ queryKey: ["dashboard-revenue"], queryFn: () => api.get<RevenueData[]>("/api/dashboard/revenue") });
-  const { data: funnel } = useQuery({ queryKey: ["dashboard-funnel"], queryFn: () => api.get<PipelineFunnelData[]>("/api/dashboard/pipeline-funnel") });
-  const { data: deals = [] } = useQuery({ queryKey: ["deals"], queryFn: () => api.get<Deal[]>("/api/deals") });
-  const { data: leads = [] } = useQuery({ queryKey: ["leads"], queryFn: () => api.get<Lead[]>("/api/leads") });
-  const { data: contacts = [] } = useQuery({ queryKey: ["contacts"], queryFn: () => api.get<Contact[]>("/api/contacts") });
+  const { data: stats }       = useQuery({ queryKey: ["dashboard-stats"],   queryFn: () => api.get<DashboardStats>("/api/dashboard/stats") });
+  const { data: revenue }     = useQuery({ queryKey: ["dashboard-revenue"], queryFn: () => api.get<RevenueData[]>("/api/dashboard/revenue") });
+  const { data: sales = [] }  = useQuery({ queryKey: ["sales"],             queryFn: () => api.get<Sale[]>("/api/sales") });
+  const { data: products = []} = useQuery({ queryKey: ["products"],         queryFn: () => api.get<Product[]>("/api/products") });
 
-  // Lead source breakdown
-  const leadSources = leads.reduce((acc, l) => {
-    acc[l.source] = (acc[l.source] || 0) + 1;
+  const confirmedSales = sales.filter((s) => s.status === "confirmed" || s.status === "delivered");
+  const totalRevenue   = confirmedSales.reduce((s, sale) => s + sale.total, 0);
+  const avgOrder       = sales.length > 0 ? totalRevenue / sales.length : 0;
+
+  // Product sold quantities
+  const productQtys = sales
+    .flatMap((s) => s.items ?? [])
+    .reduce((acc, item) => {
+      acc[item.productName] = (acc[item.productName] || 0) + item.quantity;
+      return acc;
+    }, {} as Record<string, number>);
+  const topProductData = Object.entries(productQtys)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 8)
+    .map(([name, qty]) => ({ name, qty }));
+
+  // Product revenue
+  const productRevenue = sales
+    .flatMap((s) => s.items ?? [])
+    .reduce((acc, item) => {
+      acc[item.productName] = (acc[item.productName] || 0) + item.quantity * item.unitPrice;
+      return acc;
+    }, {} as Record<string, number>);
+  const topRevenueData = Object.entries(productRevenue)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 6)
+    .map(([name, value]) => ({ name, value }));
+
+  // Category breakdown
+  const categoryRevenue = products.reduce((acc, p) => {
+    const sold = productRevenue[p.name] || 0;
+    if (sold > 0) acc[p.category] = (acc[p.category] || 0) + sold;
     return acc;
   }, {} as Record<string, number>);
-  const leadSourceData = Object.entries(leadSources).map(([name, value]) => ({ name, value }));
+  const categoryData = Object.entries(categoryRevenue).map(([name, value]) => ({ name, value }));
 
-  // Deal stage breakdown
-  const dealStages = deals.reduce((acc, d) => {
-    acc[d.stage] = (acc[d.stage] || 0) + d.value;
+  // Staff performance based on sales
+  const staffPerf = sales.reduce((acc, s) => {
+    const name = s.assignedToName || "တာဝန်မပေးရသေး";
+    if (!acc[name]) acc[name] = { name, count: 0, revenue: 0 };
+    acc[name].count   += 1;
+    acc[name].revenue += s.total;
     return acc;
-  }, {} as Record<string, number>);
-  const dealStageData = Object.entries(dealStages).map(([name, value]) => ({ name, value }));
-
-  // Rep performance
-  const repPerformance = deals.reduce((acc, d) => {
-    const rep = d.assignedToName || "တာဝန်မပေးရသေး";
-    if (!acc[rep]) acc[rep] = { rep, won: 0, total: 0, wonValue: 0, totalValue: 0 };
-    acc[rep].total += 1;
-    acc[rep].totalValue += d.value;
-    if (d.stage === "Closed Won") {
-      acc[rep].won += 1;
-      acc[rep].wonValue += d.value;
-    }
-    return acc;
-  }, {} as Record<string, any>);
-  const repData = Object.values(repPerformance).map((r: any) => ({
-    ...r,
-    winRate: r.total > 0 ? Math.round((r.won / r.total) * 100) : 0,
-  }));
-
-  // Lead status breakdown
-  const leadStatusData = [
-    { name: "အသစ်", value: leads.filter((l) => l.status === "new").length },
-    { name: "ဆက်သွယ်ပြီး", value: leads.filter((l) => l.status === "contacted").length },
-    { name: "အရည်အချင်းပြည့်", value: leads.filter((l) => l.status === "qualified").length },
-    { name: "ဖောက်သည်ဖြစ်ပြီ", value: leads.filter((l) => l.status === "converted").length },
-    { name: "မသင့်လျော်", value: leads.filter((l) => l.status === "unqualified").length },
-  ].filter((d) => d.value > 0);
-
-  const wonDeals = deals.filter((d) => d.stage === "Closed Won");
-  const totalRevenue = wonDeals.reduce((s, d) => s + d.value, 0);
-  const avgDeal = wonDeals.length > 0 ? totalRevenue / wonDeals.length : 0;
-  const winRate = deals.length > 0 ? Math.round((wonDeals.length / deals.length) * 100) : 0;
+  }, {} as Record<string, { name: string; count: number; revenue: number }>);
+  const staffData = Object.values(staffPerf).sort((a, b) => b.revenue - a.revenue);
 
   return (
     <div className="space-y-6">
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "စုစုပေါင်းဝင်ငွေ", value: formatCurrency(totalRevenue), icon: DollarSign, color: "bg-emerald-50 text-emerald-600", change: "+18.5%" },
-          { label: "နိုင်မှုနှုန်း", value: `${winRate}%`, icon: Award, color: "bg-blue-50 text-blue-600", change: "+3.2%" },
-          { label: "ပျမ်းမျှဈေးကွက်တန်ဖိုး", value: formatCurrency(avgDeal), icon: TrendingUp, color: "bg-indigo-50 text-indigo-600", change: "+5.1%" },
-          { label: "အဆက်အသွယ်စုစုပေါင်း", value: String(contacts.length), icon: Users, color: "bg-amber-50 text-amber-600", change: "+12" },
+          { label: "စုစုပေါင်းဝင်ငွေ",          value: formatCurrency(totalRevenue), icon: DollarSign,  color: "bg-emerald-50 text-emerald-600", change: "+18.5%" },
+          { label: "အရောင်းအကြိမ်ရေ",            value: String(sales.length),         icon: ShoppingCart, color: "bg-blue-50 text-blue-600",     change: "+12.3%" },
+          { label: "ပျမ်းမျှမှာယူမှုတန်ဖိုး",    value: formatCurrency(avgOrder),     icon: TrendingUp,  color: "bg-indigo-50 text-indigo-600",  change: "+5.1%"  },
+          { label: "ကုန်ပစ္စည်းမျိုးစုံ",          value: String(products.length),      icon: Package,     color: "bg-amber-50 text-amber-600",    change: `${products.filter((p)=>p.stock!==undefined&&p.minStock!==undefined&&p.stock<p.minStock).length} ကုန်ပြတ်` },
         ].map((kpi) => (
           <Card key={kpi.label}>
             <CardContent className="pt-5 pb-4">
@@ -97,9 +102,8 @@ export default function Reports() {
       <Tabs defaultValue="revenue">
         <TabsList className="mb-4">
           <TabsTrigger value="revenue">ဝင်ငွေ</TabsTrigger>
-          <TabsTrigger value="pipeline">ဈေးကွက်စီမံ</TabsTrigger>
-          <TabsTrigger value="leads">လိဒ်</TabsTrigger>
-          <TabsTrigger value="performance">အဖွဲ့စွမ်းဆောင်ရည်</TabsTrigger>
+          <TabsTrigger value="products">ကုန်ပစ္စည်း</TabsTrigger>
+          <TabsTrigger value="performance">ဝန်ထမ်းစွမ်းဆောင်</TabsTrigger>
         </TabsList>
 
         {/* Revenue Tab */}
@@ -122,226 +126,135 @@ export default function Reports() {
                     <Tooltip formatter={(v: number) => formatCurrency(v)} />
                     <Legend />
                     <Area type="monotone" dataKey="revenue" stroke="#3b82f6" fill="url(#rev)" strokeWidth={2} name="ဝင်ငွေ" />
-                    <Area type="monotone" dataKey="target" stroke="#e5e7eb" fill="none" strokeWidth={2} strokeDasharray="4 2" name="ပန်းတိုင်" />
+                    <Area type="monotone" dataKey="target"  stroke="#e5e7eb" fill="none" strokeWidth={2} strokeDasharray="4 2" name="ပန်းတိုင်" />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
+            {/* Sales table */}
             <Card>
-              <CardHeader><CardTitle className="text-base">ဈေးကွက်အလိုက် ဝင်ငွေ</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={wonDeals.slice(0, 8)} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="company" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                    <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} name="တန်ဖိုး" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Pipeline Tab */}
-        <TabsContent value="pipeline" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader><CardTitle className="text-base">ဆင့်အလိုက် ဈေးကွက်တန်ဖိုး</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={funnel} layout="vertical" margin={{ top: 5, right: 10, left: 60, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
-                    <YAxis type="category" dataKey="stage" tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                    <Bar dataKey="value" fill="#8b5cf6" radius={[0, 4, 4, 0]} name="တန်ဖိုး" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader><CardTitle className="text-base">ဆင့်အလိုက် ဈေးကွက် (တန်ဖိုး)</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
-                    <Pie data={dealStageData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                      {dealStageData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Deals table */}
-          <Card>
-            <CardHeader><CardTitle className="text-base">လက်ရှိဈေးကွက်အားလုံး</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b bg-gray-50/50">
-                      {["ဈေးကွက်", "ကုမ္ပဏီ", "ဆင့်", "တန်ဖိုး", "ဖြစ်နိုင်ချေ", "ပိတ်ဆင်းမည့်ရက်", "ရောင်းသူ"].map((h) => (
-                        <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {deals.filter((d) => !["Closed Lost"].includes(d.stage)).map((deal) => (
-                      <tr key={deal.id} className="hover:bg-gray-50/50">
-                        <td className="px-4 py-3 text-sm font-medium">{deal.title}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{deal.company || "—"}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant={deal.stage === "Closed Won" ? "success" : "secondary"}>{deal.stage}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-sm font-semibold text-primary">{formatCurrency(deal.value)}</td>
-                        <td className="px-4 py-3 text-sm">{deal.probability}%</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{formatDate(deal.expectedClose)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-500">{deal.assignedToName || "—"}</td>
+              <CardHeader><CardTitle className="text-base">လတ်တလော အရောင်းမှတ်တမ်းများ</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-gray-50/50">
+                        {["#", "ဖောက်သည်", "စုစုပေါင်း", "အခြေအနေ", "ရက်စွဲ"].map((h) => (
+                          <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                    </thead>
+                    <tbody className="divide-y">
+                      {sales.slice(0, 8).map((sale) => (
+                        <tr key={sale.id} className="hover:bg-gray-50/50">
+                          <td className="px-4 py-2 text-xs font-mono text-gray-400">#{String(sale.id).padStart(4, "0")}</td>
+                          <td className="px-4 py-2 text-sm">{sale.contactName || "—"}</td>
+                          <td className="px-4 py-2 text-sm font-semibold text-primary">{formatCurrency(sale.total)}</td>
+                          <td className="px-4 py-2"><Badge variant={statusConfig[sale.status]?.variant}>{statusConfig[sale.status]?.label}</Badge></td>
+                          <td className="px-4 py-2 text-xs text-gray-400">{formatDate(sale.date)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        {/* Leads Tab */}
-        <TabsContent value="leads" className="space-y-4">
+        {/* Products Tab */}
+        <TabsContent value="products" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
-              <CardHeader><CardTitle className="text-base">လိဒ်ရင်းမြစ်</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">ရောင်းအားအမြင့်ဆုံး ကုန်ပစ္စည်း (အရေ)</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
-                    <Pie data={leadSourceData} cx="50%" cy="50%" outerRadius={100} dataKey="value" nameKey="name">
-                      {leadSourceData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
+                  <BarChart data={topProductData} layout="vertical" margin={{ top: 5, right: 10, left: 60, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={80} />
+                    <Tooltip formatter={(v: number) => [`${v} ခု`, "ရောင်းချမှု"]} />
+                    <Bar dataKey="qty" fill="#6366f1" radius={[0, 4, 4, 0]} name="ရောင်းချမှု" />
+                  </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-base">လိဒ်အခြေအနေ ခွဲခြမ်းစိတ်ဖြာ</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">အမျိုးအစားအလိုက် ဝင်ငွေ</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={leadStatusData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]} name="လိဒ်">
-                      {leadStatusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Bar>
-                  </BarChart>
+                  <PieChart>
+                    <Pie data={categoryData} cx="50%" cy="50%" outerRadius={100} dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                      {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  </PieChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
           </div>
 
-          {/* Lead value by source */}
           <Card>
-            <CardHeader><CardTitle className="text-base">ရင်းမြစ်အလိုက် လိဒ်တန်ဖိုး</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">ကုန်ပစ္စည်းအလိုက် ဝင်ငွေ</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={240}>
-                <BarChart
-                  data={Object.entries(
-                    leads.reduce((acc, l) => { acc[l.source] = (acc[l.source] || 0) + (l.value || 0); return acc; }, {} as Record<string, number>)
-                  ).map(([name, value]) => ({ name, value }))}
-                  margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
-                >
+                <BarChart data={topRevenueData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
                   <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} name="တန်ဖိုး" />
+                  <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} name="ဝင်ငွေ" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Team Performance Tab */}
+        {/* Staff Performance Tab */}
         <TabsContent value="performance" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
-              <CardHeader><CardTitle className="text-base">ရောင်းသူအလိုက် ဝင်ငွေ</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">ဝန်ထမ်းအလိုက် ဝင်ငွေ</CardTitle></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={repData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                  <BarChart data={staffData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="rep" tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
                     <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                    <Legend />
-                    <Bar dataKey="wonValue" fill="#10b981" name="နိုင်ရဝင်ငွေ" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="totalValue" fill="#e5e7eb" name="ဈေးကွက်တန်ဖိုးစုစုပေါင်း" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="revenue" fill="#10b981" name="ဝင်ငွေ" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-base">ရောင်းသူအလိုက် နိုင်မှုနှုန်း</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-4 pt-2">
-                  {repData.map((rep) => (
-                    <div key={rep.rep} className="space-y-1.5">
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium text-gray-700">{rep.rep}</span>
-                        <span className="text-gray-500">{rep.won}/{rep.total} ဈေးကွက် · {rep.winRate}%</span>
-                      </div>
-                      <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: `${rep.winRate}%` }} />
-                      </div>
-                      <div className="text-xs text-gray-400">နိုင်ရ: {formatCurrency(rep.wonValue)}</div>
-                    </div>
-                  ))}
-                </div>
+              <CardHeader><CardTitle className="text-base">ဝန်ထမ်း စွမ်းဆောင်ရည် အသေးစိတ်</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-gray-50/50">
+                      {["ဝန်ထမ်း", "အရောင်းအကြိမ်", "ဝင်ငွေစုစုပေါင်း"].map((h) => (
+                        <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {staffData.map((rep) => (
+                      <tr key={rep.name} className="hover:bg-gray-50/50">
+                        <td className="px-4 py-3 font-medium text-sm">{rep.name}</td>
+                        <td className="px-4 py-3 text-sm">{rep.count}</td>
+                        <td className="px-4 py-3 text-sm text-emerald-600 font-bold">{formatCurrency(rep.revenue)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </CardContent>
             </Card>
           </div>
-
-          <Card>
-            <CardHeader><CardTitle className="text-base">ရောင်းသူ စွမ်းဆောင်ရည် အသေးစိတ်</CardTitle></CardHeader>
-            <CardContent className="p-0">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-gray-50/50">
-                    {["ရောင်းသူ", "ဈေးကွက်စုစုပေါင်း", "နိုင်ရ", "နိုင်မှုနှုန်း", "ဈေးကွက်တန်ဖိုးစုစုပေါင်း", "နိုင်ရဝင်ငွေ"].map((h) => (
-                      <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {repData.sort((a, b) => b.wonValue - a.wonValue).map((rep) => (
-                    <tr key={rep.rep} className="hover:bg-gray-50/50">
-                      <td className="px-4 py-3 font-medium text-sm">{rep.rep}</td>
-                      <td className="px-4 py-3 text-sm">{rep.total}</td>
-                      <td className="px-4 py-3 text-sm text-emerald-600 font-medium">{rep.won}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-1.5 bg-gray-100 rounded-full"><div className="h-full bg-emerald-500 rounded-full" style={{ width: `${rep.winRate}%` }} /></div>
-                          {rep.winRate}%
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-primary font-medium">{formatCurrency(rep.totalValue)}</td>
-                      <td className="px-4 py-3 text-sm text-emerald-600 font-bold">{formatCurrency(rep.wonValue)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

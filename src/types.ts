@@ -23,49 +23,6 @@ export interface Contact {
   updatedAt: string;
 }
 
-export interface Lead {
-  id: number;
-  title: string;
-  contactId?: number;
-  contactName?: string;
-  company?: string;
-  email?: string;
-  phone?: string;
-  source: string;
-  status: "new" | "contacted" | "qualified" | "unqualified" | "converted";
-  value?: number;
-  notes?: string;
-  assignedTo?: number;
-  assignedToName?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Deal {
-  id: number;
-  title: string;
-  contactId?: number;
-  contactName?: string;
-  company?: string;
-  stage: string;
-  value: number;
-  probability: number;
-  expectedClose: string;
-  assignedTo?: number;
-  assignedToName?: string;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface PipelineStage {
-  id: number;
-  name: string;
-  color: string;
-  order: number;
-  probability: number;
-}
-
 export interface Task {
   id: number;
   title: string;
@@ -75,7 +32,7 @@ export interface Task {
   status: "todo" | "in_progress" | "done";
   assignedTo?: number;
   assignedToName?: string;
-  relatedType?: "deal" | "contact" | "lead";
+  relatedType?: string;
   relatedId?: number;
   relatedName?: string;
   createdAt: string;
@@ -135,23 +92,15 @@ export interface Sale {
 export interface DashboardStats {
   totalRevenue: number;
   revenueGrowth: number;
-  activeDeals: number;
-  dealsGrowth: number;
-  newLeads: number;
-  leadsGrowth: number;
-  conversionRate: number;
-  conversionGrowth: number;
-  pipelineValue: number;
+  salesCount: number;
+  salesGrowth: number;
+  totalCustomers: number;
+  customersGrowth: number;
+  lowStockItems: number;
 }
 
 export interface RevenueData {
   month: string;
   revenue: number;
   target: number;
-}
-
-export interface PipelineFunnelData {
-  stage: string;
-  value: number;
-  count: number;
 }
