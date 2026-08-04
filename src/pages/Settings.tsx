@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { PipelineStage, User } from "@/types";
@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
-import { Save, User as UserIcon, GitBranch, Users, Building2, Bell } from "lucide-react";
+import { useBranding, type Branding } from "@/contexts/BrandingContext";
+import { Save, User as UserIcon, GitBranch, Users, Building2, Bell, Store, Upload, X } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -74,6 +75,143 @@ function ProfileTab() {
         </div>
         <Button variant="outline" onClick={() => toast({ title: "စကားဝှက်ပြောင်းပြီး" })}>စကားဝှက်ပြောင်းမည်</Button>
       </div>
+    </div>
+  );
+}
+
+function BrandingTab() {
+  const { branding, updateBranding } = useBranding();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState<Pick<Branding, "shopName" | "shopTagline" | "logoUrl">>({
+    shopName: branding.shopName,
+    shopTagline: branding.shopTagline,
+    logoUrl: branding.logoUrl,
+  });
+  const [saving, setSaving] = useState(false);
+
+  // Keep form in sync when branding loads
+  const [synced, setSynced] = useState(false);
+  if (!synced && (branding.shopName !== "Sales Manager Pro" || branding.logoUrl)) {
+    setForm({ shopName: branding.shopName, shopTagline: branding.shopTagline, logoUrl: branding.logoUrl });
+    setSynced(true);
+  }
+
+  const shopInitials = form.shopName
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "SM";
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+      toast({ title: "လိုဂိုဖိုင်သည် 1MB ထက် မကျော်ရ", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      setForm((p) => ({ ...p, logoUrl: result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateBranding(form);
+      toast({ title: "ဆိုင်အချက်အလက်သိမ်းပြီး" });
+    } catch {
+      toast({ title: "သိမ်းမသိမ်းနိုင်ပါ", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-lg">
+      <div>
+        <h3 className="font-medium mb-1">ဆိုင်အမည်နှင့် လိုဂို</h3>
+        <p className="text-sm text-muted-foreground">ဆိုင်အမည်နှင့် လိုဂိုကို ပြောင်းလဲပါက sidebar နှင့် အတူ app တစ်ခုလုံးတွင် ချက်ချင်းဖေါ်ပြမည်။</p>
+      </div>
+
+      {/* Live preview */}
+      <Card className="bg-sidebar border-sidebar-border">
+        <CardContent className="p-4">
+          <p className="text-xs text-sidebar-foreground/40 mb-3 uppercase tracking-wider font-semibold">အသွင်အပြင် ကြိုတင်ကြည့်ရှုချက်</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-white font-bold text-sm overflow-hidden">
+              {form.logoUrl ? (
+                <img src={form.logoUrl} alt={form.shopName} className="h-10 w-10 object-cover" />
+              ) : (
+                shopInitials
+              )}
+            </div>
+            <div>
+              <div className="text-sm font-bold text-white leading-tight">{form.shopName || "ဆိုင်အမည်"}</div>
+              <div className="text-xs text-sidebar-foreground/60">{form.shopTagline || "ကြော်ငြာစာသား"}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* Logo upload */}
+      <div className="space-y-3">
+        <Label>ဆိုင်လိုဂို</Label>
+        <div className="flex items-center gap-4">
+          <div className="h-16 w-16 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50">
+            {form.logoUrl ? (
+              <img src={form.logoUrl} alt="logo" className="h-16 w-16 object-cover rounded-lg" />
+            ) : (
+              <Store className="h-6 w-6 text-gray-300" />
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="h-4 w-4" />
+              ပုံတင်မည်
+            </Button>
+            {form.logoUrl && (
+              <Button type="button" variant="ghost" size="sm" className="gap-2 text-destructive hover:text-destructive" onClick={() => setForm((p) => ({ ...p, logoUrl: "" }))}>
+                <X className="h-4 w-4" />
+                ဖယ်ရှားမည်
+              </Button>
+            )}
+            <p className="text-xs text-muted-foreground">PNG, JPG, SVG — အများဆုံး 1MB</p>
+          </div>
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+      </div>
+
+      {/* Shop name */}
+      <div className="space-y-1.5">
+        <Label>ဆိုင်အမည်</Label>
+        <Input
+          value={form.shopName}
+          onChange={(e) => setForm((p) => ({ ...p, shopName: e.target.value }))}
+          placeholder="ဥပမာ — မင်းကျော်ဆိုင်"
+        />
+      </div>
+
+      {/* Tagline */}
+      <div className="space-y-1.5">
+        <Label>ကြော်ငြာစာသား <span className="text-muted-foreground">(ရွေးချယ်နိုင်)</span></Label>
+        <Input
+          value={form.shopTagline}
+          onChange={(e) => setForm((p) => ({ ...p, shopTagline: e.target.value }))}
+          placeholder="ဥပမာ — အကောင်းဆုံးဝန်ဆောင်မှု"
+        />
+      </div>
+
+      <Button className="gap-2" onClick={handleSave} disabled={saving}>
+        <Save className="h-4 w-4" />
+        {saving ? "သိမ်းနေသည်…" : "ဆိုင်အချက်အလက်သိမ်းမည်"}
+      </Button>
     </div>
   );
 }
@@ -251,14 +389,16 @@ function CompanyTab() {
 export default function Settings() {
   return (
     <div className="max-w-4xl">
-      <Tabs defaultValue="profile">
-        <TabsList className="mb-6">
+      <Tabs defaultValue="branding">
+        <TabsList className="mb-6 flex-wrap h-auto gap-1">
+          <TabsTrigger value="branding" className="gap-1.5"><Store className="h-4 w-4" />ဆိုင်ပုံစံ</TabsTrigger>
           <TabsTrigger value="profile" className="gap-1.5"><UserIcon className="h-4 w-4" />ကိုယ်ရေး</TabsTrigger>
           <TabsTrigger value="pipeline" className="gap-1.5"><GitBranch className="h-4 w-4" />ဈေးကွက်ဆင့်</TabsTrigger>
           <TabsTrigger value="team" className="gap-1.5"><Users className="h-4 w-4" />အဖွဲ့</TabsTrigger>
           <TabsTrigger value="company" className="gap-1.5"><Building2 className="h-4 w-4" />ကုမ္ပဏီ</TabsTrigger>
           <TabsTrigger value="notifications" className="gap-1.5"><Bell className="h-4 w-4" />အကြောင်းကြားချက်</TabsTrigger>
         </TabsList>
+        <TabsContent value="branding"><BrandingTab /></TabsContent>
         <TabsContent value="profile"><ProfileTab /></TabsContent>
         <TabsContent value="pipeline"><PipelineTab /></TabsContent>
         <TabsContent value="team"><TeamTab /></TabsContent>

@@ -51,6 +51,19 @@ This starts both the Vite dev server (port 5000) and the Express API server (por
 - **Tasks** — Task management with priorities, due dates, and related records
 - **Reports** — Revenue, pipeline, lead, and team performance analytics
 - **Settings** — Profile, pipeline stages, team, company, notifications
+- **Branding** — Admin can set shop name, tagline, and logo; syncs globally across sidebar and all views in real-time (`GET/PUT /api/branding`)
+
+## PWA Support
+
+- `public/manifest.json` — Web app manifest for install prompts on mobile & desktop
+- `public/sw.js` — Service worker (cache-first for assets, network-first for API)
+- `public/icon-192.svg` / `public/icon-512.svg` — App icons
+- Service worker registered in `index.html` on page load
+
+## Currency & Locale
+
+- All currency values use `formatCurrency()` from `src/lib/utils.ts` → outputs `150,000 MMK`
+- All UI text is in Burmese POS terminology
 
 ## Demo Login
 

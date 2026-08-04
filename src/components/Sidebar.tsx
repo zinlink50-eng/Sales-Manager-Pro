@@ -6,11 +6,19 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { useState } from "react";
 
-const navGroups = [
+interface NavItem {
+  to: string;
+  label: string;
+  icon: React.ElementType;
+  end?: boolean;
+}
+
+const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "ပင်မ",
     items: [
@@ -50,7 +58,16 @@ const navGroups = [
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
+  const { branding } = useBranding();
   const [collapsed, setCollapsed] = useState(false);
+
+  // Derive short initials from shop name for the logo fallback
+  const shopInitials = branding.shopName
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "SM";
 
   return (
     <aside
@@ -59,15 +76,19 @@ export default function Sidebar() {
         collapsed ? "w-16" : "w-60"
       )}
     >
-      {/* Logo */}
+      {/* Logo / Shop Branding */}
       <div className={cn("flex items-center h-16 px-4 border-b border-sidebar-border shrink-0", collapsed ? "justify-center" : "gap-3")}>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-white font-bold text-sm">
-          SM
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-white font-bold text-sm overflow-hidden">
+          {branding.logoUrl ? (
+            <img src={branding.logoUrl} alt={branding.shopName} className="h-9 w-9 object-cover" />
+          ) : (
+            shopInitials
+          )}
         </div>
         {!collapsed && (
-          <div>
-            <div className="text-sm font-bold text-white leading-tight">Sales Manager</div>
-            <div className="text-xs text-sidebar-foreground/60">Pro Edition</div>
+          <div className="min-w-0">
+            <div className="text-sm font-bold text-white leading-tight truncate">{branding.shopName}</div>
+            <div className="text-xs text-sidebar-foreground/60 truncate">{branding.shopTagline}</div>
           </div>
         )}
       </div>
@@ -84,7 +105,7 @@ export default function Sidebar() {
               </div>
             )}
             <div className="space-y-0.5">
-              {group.items.map(({ to, label, icon: Icon, end }) => (
+              {group.items.map(({ to, label, icon: Icon, end = false }) => (
                 <NavLink
                   key={to}
                   to={to}

@@ -124,6 +124,15 @@ const sales: Sale[] = [
 ];
 
 // ──────────────────────────────────────────────────────────
+// Branding settings
+// ──────────────────────────────────────────────────────────
+let branding = {
+  shopName: "Sales Manager Pro",
+  shopTagline: "Pro Edition",
+  logoUrl: "", // base64 data URL or empty string
+};
+
+// ──────────────────────────────────────────────────────────
 // Counters for auto-increment IDs
 // ──────────────────────────────────────────────────────────
 const nextId = { contacts: 9, leads: 9, deals: 8, tasks: 8, activities: 11, products: 11, sales: 5 };
@@ -258,6 +267,13 @@ export const db = {
     sales[idx] = { ...sales[idx], ...data }; return sales[idx];
   },
   deleteSale:  (id: number) => { const idx = sales.findIndex((s) => s.id === id); if (idx < 0) return false; sales.splice(idx, 1); return true; },
+
+  // Branding
+  getBranding: () => ({ ...branding }),
+  updateBranding: (data: Partial<typeof branding>) => {
+    branding = { ...branding, ...data };
+    return { ...branding };
+  },
 
   // Dashboard
   getDashboardStats: () => {

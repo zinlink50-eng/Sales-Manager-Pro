@@ -30,6 +30,10 @@ r.get("/auth/me", (req: Request, res: Response) => {
 // ── Users ─────────────────────────────────────────────────
 r.get("/users", (_req, res) => res.json(db.getUsers()));
 
+// ── Branding ──────────────────────────────────────────────
+r.get("/branding", (_, res) => res.json(db.getBranding()));
+r.put("/branding", (req, res) => res.json(db.updateBranding(req.body)));
+
 // ── Dashboard ─────────────────────────────────────────────
 r.get("/dashboard/stats",          (_, res) => res.json(db.getDashboardStats()));
 r.get("/dashboard/revenue",        (_, res) => res.json(db.getRevenueData()));
