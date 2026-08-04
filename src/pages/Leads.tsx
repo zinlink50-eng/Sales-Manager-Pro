@@ -21,11 +21,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 
 const statusConfig: Record<string, { label: string; variant: any }> = {
-  new: { label: "New", variant: "info" },
-  contacted: { label: "Contacted", variant: "secondary" },
-  qualified: { label: "Qualified", variant: "success" },
-  unqualified: { label: "Unqualified", variant: "destructive" },
-  converted: { label: "Converted", variant: "purple" },
+  new: { label: "အသစ်", variant: "info" },
+  contacted: { label: "ဆက်သွယ်ပြီး", variant: "secondary" },
+  qualified: { label: "အရည်အချင်းပြည့်", variant: "success" },
+  unqualified: { label: "မသင့်လျော်", variant: "destructive" },
+  converted: { label: "ဖောက်သည်ဖြစ်ပြီ", variant: "purple" },
 };
 
 const sources = ["LinkedIn", "Referral", "Cold Outreach", "Conference", "Website", "Trade Show", "Social Media", "Other"];
@@ -62,34 +62,34 @@ function LeadForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
-          <Label>Lead Title *</Label>
-          <Input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. TechCorp CRM Deal" required />
+          <Label>လိဒ်ခေါင်းစဉ် *</Label>
+          <Input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="ဥပမာ — TechCorp CRM Deal" required />
         </div>
         <div className="space-y-1.5">
-          <Label>Company</Label>
-          <Input value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="Company name" />
+          <Label>ကုမ္ပဏီ</Label>
+          <Input value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="ကုမ္ပဏီအမည်" />
         </div>
         <div className="space-y-1.5">
-          <Label>Est. Value ($)</Label>
+          <Label>ခန့်မှန်းတန်ဖိုး (MMK)</Label>
           <Input type="number" value={form.value} onChange={(e) => set("value", e.target.value)} placeholder="0" />
         </div>
         <div className="space-y-1.5">
-          <Label>Email</Label>
+          <Label>အီးမေးလ်</Label>
           <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="contact@company.com" />
         </div>
         <div className="space-y-1.5">
-          <Label>Phone</Label>
-          <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+1-555-0100" />
+          <Label>ဖုန်းနံပါတ်</Label>
+          <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+95-9-xxx-xxx-xxx" />
         </div>
         <div className="space-y-1.5">
-          <Label>Source</Label>
+          <Label>ရင်းမြစ်</Label>
           <Select value={form.source} onValueChange={(v) => set("source", v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{sources.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label>Status</Label>
+          <Label>အခြေအနေ</Label>
           <Select value={form.status} onValueChange={(v) => set("status", v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -98,22 +98,22 @@ function LeadForm({
           </Select>
         </div>
         <div className="col-span-2 space-y-1.5">
-          <Label>Assigned To</Label>
+          <Label>တာဝန်ပေးသူ</Label>
           <Select value={form.assignedTo} onValueChange={(v) => set("assignedTo", v)}>
-            <SelectTrigger><SelectValue placeholder="Select team member" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="အဖွဲ့ဝင်ရွေးပါ" /></SelectTrigger>
             <SelectContent>
               {users.map((u) => <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div className="col-span-2 space-y-1.5">
-          <Label>Notes</Label>
-          <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Additional notes..." rows={3} />
+          <Label>မှတ်ချက်</Label>
+          <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="အပိုမှတ်ချက်များ..." rows={3} />
         </div>
       </div>
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit">{lead ? "Save Changes" : "Create Lead"}</Button>
+        <Button type="button" variant="outline" onClick={onClose}>မလုပ်တော့</Button>
+        <Button type="submit">{lead ? "သိမ်းဆည်းမည်" : "လိဒ်ဖန်တီးမည်"}</Button>
       </DialogFooter>
     </form>
   );
@@ -134,18 +134,18 @@ export default function Leads() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.post("/api/leads", data),
-    onSuccess: () => { invalidate(); setDialogOpen(false); toast({ title: "Lead created" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onSuccess: () => { invalidate(); setDialogOpen(false); toast({ title: "လိဒ်ဖန်တီးပြီး" }); },
+    onError: (e: any) => toast({ title: "အမှား", description: e.message, variant: "destructive" }),
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/api/leads/${id}`, data),
-    onSuccess: () => { invalidate(); setDialogOpen(false); setEditing(undefined); toast({ title: "Lead updated" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onSuccess: () => { invalidate(); setDialogOpen(false); setEditing(undefined); toast({ title: "လိဒ်ပြင်ဆင်ပြီး" }); },
+    onError: (e: any) => toast({ title: "အမှား", description: e.message, variant: "destructive" }),
   });
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/api/leads/${id}`),
-    onSuccess: () => { invalidate(); toast({ title: "Lead deleted" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onSuccess: () => { invalidate(); toast({ title: "လိဒ်ဖျက်ပြီး" }); },
+    onError: (e: any) => toast({ title: "အမှား", description: e.message, variant: "destructive" }),
   });
 
   const filtered = leads.filter((l) => {
@@ -176,7 +176,7 @@ export default function Leads() {
               className={`p-3 rounded-lg border text-left transition-colors ${statusFilter === s ? "bg-primary text-white border-primary" : "bg-white hover:bg-gray-50"}`}
             >
               <div className={`text-lg font-bold ${statusFilter === s ? "text-white" : ""}`}>{count}</div>
-              <div className={`text-xs capitalize ${statusFilter === s ? "text-white/80" : "text-muted-foreground"}`}>{s === "all" ? "Total Leads" : statusConfig[s]?.label}</div>
+              <div className={`text-xs capitalize ${statusFilter === s ? "text-white/80" : "text-muted-foreground"}`}>{s === "all" ? "လိဒ်စုစုပေါင်း" : statusConfig[s]?.label}</div>
               {val > 0 && <div className={`text-xs font-medium mt-0.5 ${statusFilter === s ? "text-white/90" : "text-primary"}`}>{formatCurrency(val)}</div>}
             </button>
           );
@@ -187,10 +187,10 @@ export default function Leads() {
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input placeholder="Search leads..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="လိဒ်ရှာဖွေမည်..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Button onClick={openCreate} className="gap-1.5">
-          <Plus className="h-4 w-4" /> Add Lead
+          <Plus className="h-4 w-4" /> လိဒ်ထည့်မည်
         </Button>
       </div>
 
@@ -201,7 +201,7 @@ export default function Leads() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-gray-50/50">
-                  {["Lead", "Company", "Source", "Value", "Status", "Assigned To", "Created", ""].map((h) => (
+                  {["လိဒ်", "ကုမ္ပဏီ", "ရင်းမြစ်", "တန်ဖိုး", "အခြေအနေ", "တာဝန်ပေးသူ", "ဖန်တီးသည့်ရက်", ""].map((h) => (
                     <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
                   ))}
                 </tr>
@@ -243,18 +243,18 @@ export default function Leads() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(lead)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEdit(lead)}><Edit className="h-4 w-4 mr-2" />ပြင်ဆင်</DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive"
                             onClick={() => deleteMutation.mutate(lead.id)}
-                          ><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                          ><Trash2 className="h-4 w-4 mr-2" />ဖျက်</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400">No leads found</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400">လိဒ်မတွေ့ပါ</td></tr>
                 )}
               </tbody>
             </table>
@@ -265,7 +265,7 @@ export default function Leads() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit Lead" : "Add New Lead"}</DialogTitle>
+            <DialogTitle>{editing ? "လိဒ်ပြင်ဆင်မည်" : "လိဒ်အသစ်ထည့်မည်"}</DialogTitle>
           </DialogHeader>
           <LeadForm
             lead={editing}

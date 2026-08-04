@@ -44,47 +44,47 @@ function DealForm({ deal, stages, users, onSubmit, onClose }: {
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ ...form, value: parseFloat(form.value) || 0, probability: parseInt(form.probability) || 0, assignedTo: form.assignedTo ? parseInt(form.assignedTo) : undefined }); }} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
-          <Label>Deal Title *</Label>
-          <Input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. TechCorp Enterprise Suite" required />
+          <Label>ဈေးကွက်ခေါင်းစဉ် *</Label>
+          <Input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="ဥပမာ — TechCorp Enterprise Suite" required />
         </div>
         <div className="space-y-1.5">
-          <Label>Company</Label>
+          <Label>ကုမ္ပဏီ</Label>
           <Input value={form.company} onChange={(e) => set("company", e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label>Deal Value ($) *</Label>
+          <Label>ဈေးကွက်တန်ဖိုး (MMK) *</Label>
           <Input type="number" value={form.value} onChange={(e) => set("value", e.target.value)} required />
         </div>
         <div className="space-y-1.5">
-          <Label>Stage</Label>
+          <Label>ဆင့်</Label>
           <Select value={form.stage} onValueChange={handleStageChange}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{stages.map((s) => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label>Probability (%)</Label>
+          <Label>ဖြစ်နိုင်ချေ (%)</Label>
           <Input type="number" min="0" max="100" value={form.probability} onChange={(e) => set("probability", e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label>Expected Close Date</Label>
+          <Label>ပိတ်ဆင်းမည့်ရက်</Label>
           <Input type="date" value={form.expectedClose} onChange={(e) => set("expectedClose", e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label>Assigned To</Label>
+          <Label>တာဝန်ပေးသူ</Label>
           <Select value={form.assignedTo} onValueChange={(v) => set("assignedTo", v)}>
-            <SelectTrigger><SelectValue placeholder="Select rep" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="ရောင်းသူရွေးပါ" /></SelectTrigger>
             <SelectContent>{users.map((u) => <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="col-span-2 space-y-1.5">
-          <Label>Description</Label>
+          <Label>ဖော်ပြချက်</Label>
           <Textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={3} />
         </div>
       </div>
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit">{deal ? "Save Changes" : "Create Deal"}</Button>
+        <Button type="button" variant="outline" onClick={onClose}>မလုပ်တော့</Button>
+        <Button type="submit">{deal ? "သိမ်းဆည်းမည်" : "ဈေးကွက်ဖန်တီးမည်"}</Button>
       </DialogFooter>
     </form>
   );
@@ -110,11 +110,11 @@ function DealCard({ deal, stages, onEdit, onDelete, onStageChange }: {
             <DropdownMenuContent align="end">
               {stages.filter(s => s.name !== deal.stage).map(s => (
                 <DropdownMenuItem key={s.id} onClick={() => onStageChange(s.name)}>
-                  Move to {s.name}
+                  ရွှေ့မည် → {s.name}
                 </DropdownMenuItem>
               ))}
-              <DropdownMenuItem onClick={onEdit}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive" onClick={onDelete}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+              <DropdownMenuItem onClick={onEdit}><Edit className="h-4 w-4 mr-2" />ပြင်ဆင်</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive" onClick={onDelete}><Trash2 className="h-4 w-4 mr-2" />ဖျက်</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -129,7 +129,7 @@ function DealCard({ deal, stages, onEdit, onDelete, onStageChange }: {
         </div>
         {deal.expectedClose && (
           <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
-            <Calendar className="h-3 w-3" />Closes {formatDate(deal.expectedClose)}
+            <Calendar className="h-3 w-3" />ပိတ်ဆင်းရက် {formatDate(deal.expectedClose)}
           </div>
         )}
         {deal.assignedToName && (
@@ -160,15 +160,15 @@ export default function Deals() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.post("/api/deals", data),
-    onSuccess: () => { invalidate(); setDialogOpen(false); toast({ title: "Deal created" }); },
+    onSuccess: () => { invalidate(); setDialogOpen(false); toast({ title: "ဈေးကွက်ဖန်တီးပြီး" }); },
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/api/deals/${id}`, data),
-    onSuccess: () => { invalidate(); setDialogOpen(false); setEditing(undefined); toast({ title: "Deal updated" }); },
+    onSuccess: () => { invalidate(); setDialogOpen(false); setEditing(undefined); toast({ title: "ဈေးကွက်ပြင်ဆင်ပြီး" }); },
   });
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/api/deals/${id}`),
-    onSuccess: () => { invalidate(); toast({ title: "Deal deleted" }); },
+    onSuccess: () => { invalidate(); toast({ title: "ဈေးကွက်ဖျက်ပြီး" }); },
   });
 
   const totalPipeline = deals
@@ -181,10 +181,10 @@ export default function Deals() {
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total Pipeline", value: formatCurrency(totalPipeline), color: "text-blue-600" },
-          { label: "Won Revenue", value: formatCurrency(wonRevenue), color: "text-emerald-600" },
-          { label: "Active Deals", value: String(deals.filter((d) => !["Closed Won", "Closed Lost"].includes(d.stage)).length), color: "text-indigo-600" },
-          { label: "Win Rate", value: `${deals.length > 0 ? Math.round((deals.filter((d) => d.stage === "Closed Won").length / deals.length) * 100) : 0}%`, color: "text-amber-600" },
+          { label: "ဈေးကွက်တန်ဖိုးစုစုပေါင်း", value: formatCurrency(totalPipeline), color: "text-blue-600" },
+          { label: "အနိုင်ရဝင်ငွေ", value: formatCurrency(wonRevenue), color: "text-emerald-600" },
+          { label: "လက်ရှိဈေးကွက်", value: String(deals.filter((d) => !["Closed Won", "Closed Lost"].includes(d.stage)).length), color: "text-indigo-600" },
+          { label: "နိုင်မှုနှုန်း", value: `${deals.length > 0 ? Math.round((deals.filter((d) => d.stage === "Closed Won").length / deals.length) * 100) : 0}%`, color: "text-amber-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-lg border p-3">
             <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
@@ -196,14 +196,14 @@ export default function Deals() {
       <div className="flex items-center justify-between">
         <div className="flex gap-1 border rounded-lg p-1 bg-white">
           <button onClick={() => setView("kanban")} className={cn("px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1.5 transition-colors", view === "kanban" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-50")}>
-            <LayoutGrid className="h-4 w-4" />Kanban
+            <LayoutGrid className="h-4 w-4" />ကန်ဘန်
           </button>
           <button onClick={() => setView("list")} className={cn("px-3 py-1.5 rounded text-sm font-medium flex items-center gap-1.5 transition-colors", view === "list" ? "bg-primary text-white" : "text-gray-500 hover:bg-gray-50")}>
-            <List className="h-4 w-4" />List
+            <List className="h-4 w-4" />စာရင်း
           </button>
         </div>
         <Button onClick={() => { setEditing(undefined); setDialogOpen(true); }} className="gap-1.5">
-          <Plus className="h-4 w-4" /> Add Deal
+          <Plus className="h-4 w-4" /> ဈေးကွက်ထည့်မည်
         </Button>
       </div>
 
@@ -232,7 +232,7 @@ export default function Deals() {
                     />
                   ))}
                   {stageDeals.length === 0 && (
-                    <div className="py-6 text-center text-xs text-gray-300">No deals</div>
+                    <div className="py-6 text-center text-xs text-gray-300">ဈေးကွက်မရှိသေး</div>
                   )}
                 </div>
               </div>
@@ -246,7 +246,7 @@ export default function Deals() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-gray-50/50">
-                    {["Deal", "Company", "Stage", "Value", "Probability", "Close Date", "Assigned", ""].map((h) => (
+                    {["ဈေးကွက်", "ကုမ္ပဏီ", "ဆင့်", "တန်ဖိုး", "ဖြစ်နိုင်ချေ", "ပိတ်ဆင်းရက်", "တာဝန်ပေးသူ", ""].map((h) => (
                       <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
                     ))}
                   </tr>
@@ -274,8 +274,8 @@ export default function Deals() {
                               <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100"><MoreHorizontal className="h-4 w-4" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => { setEditing(deal); setDialogOpen(true); }}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(deal.id)}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => { setEditing(deal); setDialogOpen(true); }}><Edit className="h-4 w-4 mr-2" />ပြင်ဆင်</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(deal.id)}><Trash2 className="h-4 w-4 mr-2" />ဖျက်</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
@@ -292,7 +292,7 @@ export default function Deals() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit Deal" : "Add New Deal"}</DialogTitle>
+            <DialogTitle>{editing ? "ဈေးကွက်ပြင်ဆင်မည်" : "ဈေးကွက်အသစ်ထည့်မည်"}</DialogTitle>
           </DialogHeader>
           <DealForm
             deal={editing} stages={stages} users={users}

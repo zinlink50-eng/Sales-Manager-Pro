@@ -17,9 +17,9 @@ import { formatDate, getInitials } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 const statusConfig: Record<string, { label: string; variant: any }> = {
-  active: { label: "Active", variant: "success" },
-  inactive: { label: "Inactive", variant: "secondary" },
-  prospect: { label: "Prospect", variant: "info" },
+  active: { label: "တက်ကြွ", variant: "success" },
+  inactive: { label: "တက်ကြွမှုမရှိ", variant: "secondary" },
+  prospect: { label: "ဖောက်သည်မျိုး", variant: "info" },
 };
 
 const sources = ["LinkedIn", "Referral", "Cold Outreach", "Conference", "Website", "Trade Show", "Social Media", "Other"];
@@ -45,58 +45,58 @@ function ContactForm({ contact, users, onSubmit, onClose }: {
     <form onSubmit={(e) => { e.preventDefault(); onSubmit({ ...form, assignedTo: form.assignedTo ? parseInt(form.assignedTo) : undefined }); }} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>First Name *</Label>
+          <Label>အမည် (ပထမ) *</Label>
           <Input value={form.firstName} onChange={(e) => set("firstName", e.target.value)} required />
         </div>
         <div className="space-y-1.5">
-          <Label>Last Name *</Label>
+          <Label>အမည် (နောက်ဆုံး) *</Label>
           <Input value={form.lastName} onChange={(e) => set("lastName", e.target.value)} required />
         </div>
         <div className="space-y-1.5">
-          <Label>Email *</Label>
+          <Label>အီးမေးလ် *</Label>
           <Input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required />
         </div>
         <div className="space-y-1.5">
-          <Label>Phone</Label>
+          <Label>ဖုန်းနံပါတ်</Label>
           <Input value={form.phone} onChange={(e) => set("phone", e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label>Company</Label>
+          <Label>ကုမ္ပဏီ</Label>
           <Input value={form.company} onChange={(e) => set("company", e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label>Position / Title</Label>
+          <Label>ရာထူး / ဝတ်ဆောင်</Label>
           <Input value={form.position} onChange={(e) => set("position", e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label>Status</Label>
+          <Label>အခြေအနေ</Label>
           <Select value={form.status} onValueChange={(v) => set("status", v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(statusConfig).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label>Source</Label>
+          <Label>ရင်းမြစ်</Label>
           <Select value={form.source} onValueChange={(v) => set("source", v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{sources.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="col-span-2 space-y-1.5">
-          <Label>Assigned To</Label>
+          <Label>တာဝန်ပေးသူ</Label>
           <Select value={form.assignedTo} onValueChange={(v) => set("assignedTo", v)}>
-            <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="တာဝန်မပေးရသေး" /></SelectTrigger>
             <SelectContent>{users.map((u) => <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="col-span-2 space-y-1.5">
-          <Label>Notes</Label>
+          <Label>မှတ်ချက်</Label>
           <Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />
         </div>
       </div>
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit">{contact ? "Save Changes" : "Create Contact"}</Button>
+        <Button type="button" variant="outline" onClick={onClose}>မလုပ်တော့</Button>
+        <Button type="submit">{contact ? "သိမ်းဆည်းမည်" : "အဆက်အသွယ်ဖန်တီးမည်"}</Button>
       </DialogFooter>
     </form>
   );
@@ -117,15 +117,15 @@ export default function Contacts() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.post("/api/contacts", data),
-    onSuccess: () => { invalidate(); setDialogOpen(false); toast({ title: "Contact created" }); },
+    onSuccess: () => { invalidate(); setDialogOpen(false); toast({ title: "အဆက်အသွယ်ဖန်တီးပြီး" }); },
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/api/contacts/${id}`, data),
-    onSuccess: () => { invalidate(); setDialogOpen(false); setEditing(undefined); toast({ title: "Contact updated" }); },
+    onSuccess: () => { invalidate(); setDialogOpen(false); setEditing(undefined); toast({ title: "အဆက်အသွယ်ပြင်ဆင်ပြီး" }); },
   });
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/api/contacts/${id}`),
-    onSuccess: () => { invalidate(); toast({ title: "Contact deleted" }); },
+    onSuccess: () => { invalidate(); toast({ title: "အဆက်အသွယ်ဖျက်ပြီး" }); },
   });
 
   const filtered = contacts.filter((c) => {
@@ -149,7 +149,7 @@ export default function Contacts() {
               onClick={() => setStatusFilter(s)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${statusFilter === s ? "bg-primary text-white border-primary" : "bg-white hover:bg-gray-50 text-gray-600"}`}
             >
-              {s === "all" ? "All" : statusConfig[s]?.label} ({count})
+              {s === "all" ? "အားလုံး" : statusConfig[s]?.label} ({count})
             </button>
           );
         })}
@@ -158,10 +158,10 @@ export default function Contacts() {
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input placeholder="Search contacts..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="အဆက်အသွယ်ရှာဖွေမည်..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Button onClick={() => { setEditing(undefined); setDialogOpen(true); }} className="gap-1.5">
-          <Plus className="h-4 w-4" /> Add Contact
+          <Plus className="h-4 w-4" /> အဆက်အသွယ်ထည့်မည်
         </Button>
       </div>
 
@@ -186,8 +186,8 @@ export default function Contacts() {
                     <Button variant="ghost" size="icon" className="h-7 w-7 -mr-1"><MoreHorizontal className="h-4 w-4" /></Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => { setEditing(contact); setDialogOpen(true); }}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(contact.id)}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setEditing(contact); setDialogOpen(true); }}><Edit className="h-4 w-4 mr-2" />ပြင်ဆင်</DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(contact.id)}><Trash2 className="h-4 w-4 mr-2" />ဖျက်</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -222,19 +222,19 @@ export default function Contacts() {
                   </div>
                 )}
               </div>
-              <div className="mt-2 text-xs text-gray-400">Added {formatDate(contact.createdAt)}</div>
+              <div className="mt-2 text-xs text-gray-400">ထည့်သည့်ရက် {formatDate(contact.createdAt)}</div>
             </CardContent>
           </Card>
         ))}
         {filtered.length === 0 && (
-          <div className="col-span-3 py-12 text-center text-sm text-gray-400">No contacts found</div>
+          <div className="col-span-3 py-12 text-center text-sm text-gray-400">အဆက်အသွယ်မတွေ့ပါ</div>
         )}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit Contact" : "Add New Contact"}</DialogTitle>
+            <DialogTitle>{editing ? "အဆက်အသွယ်ပြင်ဆင်မည်" : "အဆက်အသွယ်အသစ်ထည့်မည်"}</DialogTitle>
           </DialogHeader>
           <ContactForm
             contact={editing} users={users}

@@ -53,15 +53,15 @@ function ProductForm({ product, onSubmit, onClose }: {
     }} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2 space-y-1.5">
-          <Label>Product Name *</Label>
-          <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Enterprise CRM License" required />
+          <Label>ကုန်ပစ္စည်းအမည် *</Label>
+          <Input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="ဥပမာ — Enterprise CRM License" required />
         </div>
         <div className="space-y-1.5">
-          <Label>SKU / Code</Label>
-          <Input value={form.sku} onChange={(e) => set("sku", e.target.value)} placeholder="e.g. CRM-ENT-001" />
+          <Label>SKU / ကုဒ်</Label>
+          <Input value={form.sku} onChange={(e) => set("sku", e.target.value)} placeholder="ဥပမာ — CRM-ENT-001" />
         </div>
         <div className="space-y-1.5">
-          <Label>Category</Label>
+          <Label>အမျိုးအစား</Label>
           <Select value={form.category} onValueChange={(v) => set("category", v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -70,19 +70,19 @@ function ProductForm({ product, onSubmit, onClose }: {
           </Select>
         </div>
         <div className="space-y-1.5">
-          <Label>Price ($) *</Label>
+          <Label>စျေးနှုန်း (MMK) *</Label>
           <Input type="number" min="0" step="0.01" value={form.price} onChange={(e) => set("price", e.target.value)} required />
         </div>
         <div className="space-y-1.5">
-          <Label>Cost ($)</Label>
-          <Input type="number" min="0" step="0.01" value={form.cost} onChange={(e) => set("cost", e.target.value)} placeholder="Optional" />
+          <Label>ကုန်ကျစရိတ် (MMK)</Label>
+          <Input type="number" min="0" step="0.01" value={form.cost} onChange={(e) => set("cost", e.target.value)} placeholder="ရွေးချယ်နိုင်" />
         </div>
         <div className="space-y-1.5">
-          <Label>Stock Qty</Label>
-          <Input type="number" min="0" value={form.stock} onChange={(e) => set("stock", e.target.value)} placeholder="Leave blank if unlimited" />
+          <Label>လက်ကျန်ပမာဏ</Label>
+          <Input type="number" min="0" value={form.stock} onChange={(e) => set("stock", e.target.value)} placeholder="အကန့်အသတ်မရှိပါက ထားချန်ပါ" />
         </div>
         <div className="space-y-1.5">
-          <Label>Unit</Label>
+          <Label>ယူနစ်</Label>
           <Select value={form.unit} onValueChange={(v) => set("unit", v)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -93,13 +93,13 @@ function ProductForm({ product, onSubmit, onClose }: {
           </Select>
         </div>
         <div className="col-span-2 space-y-1.5">
-          <Label>Description</Label>
+          <Label>ဖော်ပြချက်</Label>
           <Textarea value={form.description} onChange={(e) => set("description", e.target.value)} rows={3} />
         </div>
       </div>
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-        <Button type="submit">{product ? "Save Changes" : "Add Product"}</Button>
+        <Button type="button" variant="outline" onClick={onClose}>မလုပ်တော့</Button>
+        <Button type="submit">{product ? "သိမ်းဆည်းမည်" : "ကုန်ပစ္စည်းထည့်မည်"}</Button>
       </DialogFooter>
     </form>
   );
@@ -119,16 +119,16 @@ export default function Products() {
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.post("/api/products", data),
-    onSuccess: () => { invalidate(); setDialogOpen(false); toast({ title: "Product added" }); },
-    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    onSuccess: () => { invalidate(); setDialogOpen(false); toast({ title: "ကုန်ပစ္စည်းထည့်ပြီး" }); },
+    onError: (e: any) => toast({ title: "အမှား", description: e.message, variant: "destructive" }),
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/api/products/${id}`, data),
-    onSuccess: () => { invalidate(); setDialogOpen(false); setEditing(undefined); toast({ title: "Product updated" }); },
+    onSuccess: () => { invalidate(); setDialogOpen(false); setEditing(undefined); toast({ title: "ကုန်ပစ္စည်းပြင်ဆင်ပြီး" }); },
   });
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/api/products/${id}`),
-    onSuccess: () => { invalidate(); toast({ title: "Product deleted" }); },
+    onSuccess: () => { invalidate(); toast({ title: "ကုန်ပစ္စည်းဖျက်ပြီး" }); },
   });
 
   const categories = ["all", ...Array.from(new Set(products.map((p) => p.category)))];
@@ -149,10 +149,10 @@ export default function Products() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total Products", value: String(products.length), icon: Package, color: "bg-blue-50 text-blue-600" },
-          { label: "Inventory Value", value: formatCurrency(totalInventoryValue), icon: DollarSign, color: "bg-emerald-50 text-emerald-600" },
-          { label: "Low Stock Items", value: String(lowStockCount), icon: AlertTriangle, color: lowStockCount > 0 ? "bg-red-50 text-red-600" : "bg-gray-50 text-gray-400" },
-          { label: "Avg Margin", value: `${Math.round(avgMargin)}%`, icon: TrendingUp, color: "bg-amber-50 text-amber-600" },
+          { label: "ကုန်ပစ္စည်းစုစုပေါင်း", value: String(products.length), icon: Package, color: "bg-blue-50 text-blue-600" },
+          { label: "လက်ကျန်တန်ဖိုး", value: formatCurrency(totalInventoryValue), icon: DollarSign, color: "bg-emerald-50 text-emerald-600" },
+          { label: "လက်ကျန်နည်းသောပစ္စည်း", value: String(lowStockCount), icon: AlertTriangle, color: lowStockCount > 0 ? "bg-red-50 text-red-600" : "bg-gray-50 text-gray-400" },
+          { label: "ပျမ်းမျှအမြတ်", value: `${Math.round(avgMargin)}%`, icon: TrendingUp, color: "bg-amber-50 text-amber-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-lg border p-4 flex items-center gap-3">
             <div className={`h-10 w-10 rounded-full flex items-center justify-center ${s.color}`}><s.icon className="h-5 w-5" /></div>
@@ -171,7 +171,7 @@ export default function Products() {
             className={cn("px-3 py-1.5 rounded-full text-sm font-medium border transition-colors capitalize",
               categoryFilter === c ? "bg-primary text-white border-primary" : "bg-white hover:bg-gray-50 text-gray-600"
             )}>
-            {c === "all" ? `All (${products.length})` : `${c} (${products.filter((p) => p.category === c).length})`}
+            {c === "all" ? `အားလုံး (${products.length})` : `${c} (${products.filter((p) => p.category === c).length})`}
           </button>
         ))}
       </div>
@@ -179,10 +179,10 @@ export default function Products() {
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input placeholder="Search products..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="ကုန်ပစ္စည်းရှာဖွေမည်..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Button onClick={() => { setEditing(undefined); setDialogOpen(true); }} className="gap-1.5">
-          <Plus className="h-4 w-4" /> Add Product
+          <Plus className="h-4 w-4" /> ကုန်ပစ္စည်းထည့်မည်
         </Button>
       </div>
 
@@ -193,7 +193,7 @@ export default function Products() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-gray-50/50">
-                  {["Product", "SKU", "Category", "Price", "Cost", "Margin", "Stock", ""].map((h) => (
+                  {["ကုန်ပစ္စည်း", "ကုဒ်", "အမျိုးအစား", "စျေးနှုန်း", "ကုန်ကျ", "အမြတ်", "လက်ကျန်", ""].map((h) => (
                     <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
                   ))}
                 </tr>
@@ -237,8 +237,8 @@ export default function Products() {
                             <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100"><MoreHorizontal className="h-4 w-4" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => { setEditing(product); setDialogOpen(true); }}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(product.id)}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => { setEditing(product); setDialogOpen(true); }}><Edit className="h-4 w-4 mr-2" />ပြင်ဆင်</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(product.id)}><Trash2 className="h-4 w-4 mr-2" />ဖျက်</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
@@ -246,7 +246,7 @@ export default function Products() {
                   );
                 })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400">No products found</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-gray-400">ကုန်ပစ္စည်းမတွေ့ပါ</td></tr>
                 )}
               </tbody>
             </table>
@@ -257,7 +257,7 @@ export default function Products() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editing ? "Edit Product" : "Add New Product"}</DialogTitle>
+            <DialogTitle>{editing ? "ကုန်ပစ္စည်းပြင်ဆင်မည်" : "ကုန်ပစ္စည်းအသစ်ထည့်မည်"}</DialogTitle>
           </DialogHeader>
           <ProductForm
             product={editing}

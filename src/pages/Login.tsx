@@ -21,7 +21,7 @@ export default function Login() {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      setError(err.message || "အကောင့်ဝင်ရောက်မှု မအောင်မြင်ပါ");
     } finally {
       setLoading(false);
     }
@@ -38,13 +38,13 @@ export default function Login() {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-white">Sales Manager Pro</h1>
-          <p className="text-blue-200 text-sm">Your complete sales management solution</p>
+          <p className="text-blue-200 text-sm">သင်၏ အရောင်းစီမံခန့်ခွဲမှုစနစ်</p>
         </div>
 
         <Card className="border-0 shadow-2xl">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl">Sign in to your account</CardTitle>
-            <CardDescription>Enter your credentials to access the dashboard</CardDescription>
+            <CardTitle className="text-xl">အကောင့်ဝင်ရောက်မည်</CardTitle>
+            <CardDescription>ပင်မစာမျက်နှာ ဝင်ရောက်ရန် အကောင့်အချက်အလက် ဖြည့်သွင်းပါ</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -55,7 +55,7 @@ export default function Login() {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
+                <Label htmlFor="email">အီးမေးလ်လိပ်စာ</Label>
                 <Input
                   id="email"
                   type="email"
@@ -66,7 +66,7 @@ export default function Login() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">စကားဝှက်</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -86,19 +86,19 @@ export default function Login() {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? "ဝင်ရောက်နေသည်..." : "ဝင်ရောက်မည်"}
               </Button>
             </form>
 
             {/* Demo accounts */}
             <div className="mt-6 pt-4 border-t">
-              <p className="text-xs text-muted-foreground text-center mb-3">Demo accounts (password: demo123)</p>
+              <p className="text-xs text-muted-foreground text-center mb-3">သရုပ်ပြအကောင့်များ (စကားဝှက်: demo123)</p>
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { name: "Alex (Admin)", email: "alex@salesmanagerpro.com" },
-                  { name: "Sarah (Manager)", email: "sarah@salesmanagerpro.com" },
-                  { name: "Mike (Sales Rep)", email: "mike@salesmanagerpro.com" },
-                  { name: "Emma (Sales Rep)", email: "emma@salesmanagerpro.com" },
+                  { name: "Alex (စီမံခန့်ခွဲသူ)", email: "alex@salesmanagerpro.com" },
+                  { name: "Sarah (မန်နေဂျာ)", email: "sarah@salesmanagerpro.com" },
+                  { name: "Mike (အရောင်းကိုယ်စားလှယ်)", email: "mike@salesmanagerpro.com" },
+                  { name: "Emma (အရောင်းကိုယ်စားလှယ်)", email: "emma@salesmanagerpro.com" },
                 ].map((account) => (
                   <button
                     key={account.email}

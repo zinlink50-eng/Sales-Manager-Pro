@@ -249,7 +249,7 @@ export const db = {
     const now = new Date().toISOString();
     const s: Sale = { ...data, id: nextId.sales++, createdAt: now };
     sales.push(s);
-    activities.push({ id: nextId.activities++, type: "deal_created", description: `New sale recorded — ${data.total ? `$${data.total.toLocaleString()}` : ""}`, relatedType: "sale", relatedId: s.id, createdAt: now });
+    activities.push({ id: nextId.activities++, type: "deal_created", description: `အရောင်းမှတ်တမ်းတင်ပြီး — ${data.total ? `${data.total.toLocaleString()} MMK` : ""}`, relatedType: "sale", relatedId: s.id, createdAt: now });
     return s;
   },
   updateSale:  (id: number, data: Partial<Sale>) => {

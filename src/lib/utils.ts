@@ -6,12 +6,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+  return (
+    new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value) + " MMK"
+  );
 }
 
 export function formatDate(dateStr: string): string {
@@ -28,12 +28,12 @@ export function formatRelativeDate(dateStr: string): string {
   const diffMs = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-  return `${Math.floor(diffDays / 365)} years ago`;
+  if (diffDays === 0) return "ယနေ့";
+  if (diffDays === 1) return "မနေ့က";
+  if (diffDays < 7) return `${diffDays} ရက် ကြာပြီ`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} ပတ် ကြာပြီ`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} လ ကြာပြီ`;
+  return `${Math.floor(diffDays / 365)} နှစ် ကြာပြီ`;
 }
 
 export function getInitials(name: string): string {

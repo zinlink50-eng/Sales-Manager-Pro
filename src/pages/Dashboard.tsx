@@ -28,10 +28,10 @@ const activityIcons: Record<string, { icon: React.ElementType; color: string }> 
 };
 
 function KpiCard({
-  title, value, growth, icon: Icon, prefix = "", suffix = "",
+  title, value, growth, icon: Icon,
 }: {
   title: string; value: number | string; growth: number;
-  icon: React.ElementType; prefix?: string; suffix?: string;
+  icon: React.ElementType;
 }) {
   const isPositive = growth >= 0;
   return (
@@ -41,7 +41,7 @@ function KpiCard({
           <div>
             <p className="text-sm text-muted-foreground">{title}</p>
             <p className="text-2xl font-bold mt-1">
-              {prefix}{typeof value === "number" ? value.toLocaleString() : value}{suffix}
+              {typeof value === "number" ? value.toLocaleString() : value}
             </p>
           </div>
           <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -50,7 +50,7 @@ function KpiCard({
         </div>
         <div className={cn("flex items-center gap-1 mt-3 text-xs font-medium", isPositive ? "text-emerald-600" : "text-red-600")}>
           {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-          {Math.abs(growth)}% vs last month
+          {Math.abs(growth)}% ယခင်လနှင့် နှိုင်းယှဉ်
         </div>
       </CardContent>
     </Card>
@@ -80,30 +80,28 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          title="Total Revenue"
-          value={stats ? formatCurrency(stats.totalRevenue).replace("$", "") : "—"}
+          title="စုစုပေါင်းဝင်ငွေ"
+          value={stats ? formatCurrency(stats.totalRevenue) : "—"}
           growth={stats?.revenueGrowth ?? 0}
           icon={DollarSign}
-          prefix="$"
         />
         <KpiCard
-          title="Active Deals"
+          title="လက်ရှိဈေးကွက်"
           value={stats?.activeDeals ?? 0}
           growth={stats?.dealsGrowth ?? 0}
           icon={Briefcase}
         />
         <KpiCard
-          title="New Leads (30d)"
+          title="လိဒ်အသစ် (ရက် ၃၀)"
           value={stats?.newLeads ?? 0}
           growth={stats?.leadsGrowth ?? 0}
           icon={Target}
         />
         <KpiCard
-          title="Conversion Rate"
-          value={stats?.conversionRate ?? 0}
+          title="ပြောင်းလဲမှုနှုန်း"
+          value={`${stats?.conversionRate ?? 0}%`}
           growth={stats?.conversionGrowth ?? 0}
           icon={Percent}
-          suffix="%"
         />
       </div>
 
@@ -112,7 +110,7 @@ export default function Dashboard() {
         {/* Revenue Chart */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">Revenue vs Target</CardTitle>
+            <CardTitle className="text-base">ဝင်ငွေ နှင့် ပန်းတိုင်</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={240}>
@@ -125,15 +123,15 @@ export default function Dashboard() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
                 <Area
                   type="monotone" dataKey="revenue" stroke="#3b82f6"
-                  fill="url(#colorRevenue)" strokeWidth={2} name="Revenue"
+                  fill="url(#colorRevenue)" strokeWidth={2} name="ဝင်ငွေ"
                 />
                 <Area
                   type="monotone" dataKey="target" stroke="#e5e7eb"
-                  fill="none" strokeWidth={2} strokeDasharray="4 2" name="Target"
+                  fill="none" strokeWidth={2} strokeDasharray="4 2" name="ပန်းတိုင်"
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -143,7 +141,7 @@ export default function Dashboard() {
         {/* Pipeline Funnel */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Pipeline Overview</CardTitle>
+            <CardTitle className="text-base">ဈေးကွက်စီမံ နိဒါန်း</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -155,7 +153,7 @@ export default function Dashboard() {
                   <div key={item.stage} className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="font-medium text-gray-700">{item.stage}</span>
-                      <span className="text-gray-500">{item.count} deals · {formatCurrency(item.value)}</span>
+                      <span className="text-gray-500">{item.count} ဈေးကွက် · {formatCurrency(item.value)}</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
@@ -171,7 +169,7 @@ export default function Dashboard() {
             {stats && (
               <div className="mt-4 pt-4 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Weighted Pipeline</span>
+                  <span className="text-sm text-muted-foreground">ဝင်ငွေ ခန့်မှန်းချက်</span>
                   <span className="text-sm font-bold text-primary">{formatCurrency(stats.pipelineValue)}</span>
                 </div>
               </div>
@@ -183,7 +181,7 @@ export default function Dashboard() {
       {/* Activity Feed */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Recent Activity</CardTitle>
+          <CardTitle className="text-base">လတ်တလော လှုပ်ရှားမှုများ</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -199,7 +197,7 @@ export default function Dashboard() {
                     <p className="text-sm text-gray-800">{activity.description}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       {activity.userName && (
-                        <span className="text-xs text-muted-foreground">by {activity.userName}</span>
+                        <span className="text-xs text-muted-foreground">မှ {activity.userName}</span>
                       )}
                       <span className="text-xs text-muted-foreground">·</span>
                       <span className="text-xs text-muted-foreground">{formatRelativeDate(activity.createdAt)}</span>

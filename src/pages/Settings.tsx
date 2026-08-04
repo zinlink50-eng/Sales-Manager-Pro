@@ -43,36 +43,36 @@ function ProfileTab() {
       <Separator />
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <Label>Full Name</Label>
+          <Label>အမည်အပြည့်အစုံ</Label>
           <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
         </div>
         <div className="space-y-1.5">
-          <Label>Email Address</Label>
+          <Label>အီးမေးလ်လိပ်စာ</Label>
           <Input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
         </div>
         <div className="space-y-1.5">
-          <Label>Phone Number</Label>
+          <Label>ဖုန်းနံပါတ်</Label>
           <Input value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
         </div>
       </div>
-      <Button className="gap-2" onClick={() => toast({ title: "Profile updated" })}><Save className="h-4 w-4" />Save Profile</Button>
+      <Button className="gap-2" onClick={() => toast({ title: "ကိုယ်ရေးအချက်အလက်သိမ်းပြီး" })}><Save className="h-4 w-4" />ကိုယ်ရေးအချက်အလက်သိမ်းမည်</Button>
 
       <Separator />
       <div className="space-y-3">
-        <h3 className="font-medium">Change Password</h3>
+        <h3 className="font-medium">စကားဝှက်ပြောင်းမည်</h3>
         <div className="space-y-1.5">
-          <Label>Current Password</Label>
+          <Label>လက်ရှိစကားဝှက်</Label>
           <Input type="password" placeholder="••••••••" />
         </div>
         <div className="space-y-1.5">
-          <Label>New Password</Label>
+          <Label>စကားဝှက်အသစ်</Label>
           <Input type="password" placeholder="••••••••" />
         </div>
         <div className="space-y-1.5">
-          <Label>Confirm New Password</Label>
+          <Label>စကားဝှက်အသစ် အတည်ပြုမည်</Label>
           <Input type="password" placeholder="••••••••" />
         </div>
-        <Button variant="outline" onClick={() => toast({ title: "Password updated" })}>Update Password</Button>
+        <Button variant="outline" onClick={() => toast({ title: "စကားဝှက်ပြောင်းပြီး" })}>စကားဝှက်ပြောင်းမည်</Button>
       </div>
     </div>
   );
@@ -84,14 +84,14 @@ function PipelineTab() {
   const { data: stages = [] } = useQuery({ queryKey: ["pipeline-stages"], queryFn: () => api.get<PipelineStage[]>("/api/pipeline-stages") });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/api/pipeline-stages/${id}`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["pipeline-stages"] }); toast({ title: "Stage updated" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["pipeline-stages"] }); toast({ title: "ဆင့်ပြင်ဆင်ပြီး" }); },
   });
 
   return (
     <div className="space-y-5 max-w-xl">
       <div>
-        <h3 className="font-medium mb-1">Pipeline Stages</h3>
-        <p className="text-sm text-muted-foreground">Customize the stages in your sales pipeline. Changes apply immediately.</p>
+        <h3 className="font-medium mb-1">ဈေးကွက်ဆင့်များ</h3>
+        <p className="text-sm text-muted-foreground">သင်၏ အရောင်းဆင့်များကို စိတ်ကြိုက်ပြင်ဆင်ပါ။ ပြောင်းလဲမှုများ ချက်ချင်းအကျိုးသက်ရောက်မည်။</p>
       </div>
       <div className="space-y-3">
         {stages.map((stage) => (
@@ -102,12 +102,12 @@ function PipelineTab() {
                   <div className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: stage.color }} />
                   <div className="flex-1">
                     <div className="font-medium text-sm">{stage.name}</div>
-                    <div className="text-xs text-gray-400">Order: {stage.order}</div>
+                    <div className="text-xs text-gray-400">အစဉ်: {stage.order}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs text-gray-500">Probability</Label>
+                    <Label className="text-xs text-gray-500">ဖြစ်နိုင်ချေ</Label>
                     <Input
                       type="number" min="0" max="100"
                       defaultValue={stage.probability}
@@ -147,10 +147,10 @@ function TeamTab() {
     <div className="space-y-5 max-w-2xl">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-medium">Team Members</h3>
-          <p className="text-sm text-muted-foreground">{users.length} members in your workspace</p>
+          <h3 className="font-medium">အဖွဲ့ဝင်များ</h3>
+          <p className="text-sm text-muted-foreground">သင်၏ workspace တွင် {users.length} ဦး ရှိသည်</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => toast({ title: "Invite sent" })}>Invite Member</Button>
+        <Button variant="outline" size="sm" onClick={() => toast({ title: "ဖိတ်ကြားချက်ပို့ပြီး" })}>အဖွဲ့ဝင်ဖိတ်မည်</Button>
       </div>
       <div className="space-y-3">
         {users.map((user) => (
@@ -182,18 +182,18 @@ function NotificationsTab() {
   const toggle = (k: keyof typeof settings) => setSettings((p) => ({ ...p, [k]: !p[k] }));
 
   const items = [
-    { key: "newLead" as const, label: "New Lead Assigned", desc: "When a lead is assigned to you" },
-    { key: "dealUpdate" as const, label: "Deal Stage Changes", desc: "When deals in your pipeline move stages" },
-    { key: "taskDue" as const, label: "Task Due Reminders", desc: "One day before a task is due" },
-    { key: "weeklyReport" as const, label: "Weekly Sales Report", desc: "Summary of your week every Monday" },
-    { key: "emailDigest" as const, label: "Daily Email Digest", desc: "Daily overview of your activities" },
+    { key: "newLead" as const, label: "လိဒ်အသစ်တာဝန်ပေးခြင်း", desc: "လိဒ်တစ်ခုကို သင့်ထံ တာဝန်ပေးသောအခါ" },
+    { key: "dealUpdate" as const, label: "ဈေးကွက်ဆင့်ပြောင်းမှု", desc: "သင်၏ ဈေးကွက်စီမံတွင် ဈေးကွက်ဆင့်ပြောင်းသောအခါ" },
+    { key: "taskDue" as const, label: "လုပ်ဆောင်ချက်အချိန်သတိပေးချက်", desc: "လုပ်ဆောင်ချက်သတ်မှတ်ရက် တစ်ရက်မတိုင်ခင်" },
+    { key: "weeklyReport" as const, label: "အပတ်စဉ်အရောင်းအစီရင်ခံစာ", desc: "တနင်္လာနေ့တိုင်း သင်၏ပတ်အနှစ်ချုပ်" },
+    { key: "emailDigest" as const, label: "နေ့စဉ်အီးမေးလ်အကျဉ်းချုပ်", desc: "နေ့စဉ် သင်၏ လှုပ်ရှားမှုများ ခြုံငုံသုံးသပ်ချက်" },
   ];
 
   return (
     <div className="space-y-5 max-w-lg">
       <div>
-        <h3 className="font-medium mb-1">Notification Preferences</h3>
-        <p className="text-sm text-muted-foreground">Choose what you want to be notified about.</p>
+        <h3 className="font-medium mb-1">အကြောင်းကြားချက်ဆက်တင်</h3>
+        <p className="text-sm text-muted-foreground">မည်သည့်အကြောင်းကြားချက် လိုချင်သည်ကို ရွေးချယ်ပါ။</p>
       </div>
       <Card>
         <CardContent className="p-0 divide-y">
@@ -208,7 +208,7 @@ function NotificationsTab() {
           ))}
         </CardContent>
       </Card>
-      <Button className="gap-2" onClick={() => toast({ title: "Notification settings saved" })}><Save className="h-4 w-4" />Save Preferences</Button>
+      <Button className="gap-2" onClick={() => toast({ title: "အကြောင်းကြားချက်ဆက်တင်သိမ်းပြီး" })}><Save className="h-4 w-4" />ဆက်တင်သိမ်းမည်</Button>
     </div>
   );
 }
@@ -219,31 +219,31 @@ function CompanyTab() {
     <div className="space-y-5 max-w-lg">
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <Label>Company Name</Label>
+          <Label>ကုမ္ပဏီအမည်</Label>
           <Input defaultValue="Sales Manager Pro Inc." />
         </div>
         <div className="space-y-1.5">
-          <Label>Website</Label>
+          <Label>ဝဘ်ဆိုက်</Label>
           <Input defaultValue="https://salesmanagerpro.com" />
         </div>
         <div className="space-y-1.5">
-          <Label>Industry</Label>
+          <Label>လုပ်ငန်းနယ်ပယ်</Label>
           <Input defaultValue="Software & Technology" />
         </div>
         <div className="space-y-1.5">
-          <Label>Company Size</Label>
-          <Input defaultValue="10–50 employees" />
+          <Label>ကုမ္ပဏီအရွယ်အစား</Label>
+          <Input defaultValue="၁၀–၅၀ ဝန်ထမ်း" />
         </div>
         <div className="space-y-1.5">
-          <Label>Currency</Label>
-          <Input defaultValue="USD ($)" />
+          <Label>ငွေကြေး</Label>
+          <Input defaultValue="MMK (ကျပ်)" />
         </div>
         <div className="space-y-1.5">
-          <Label>Fiscal Year Start</Label>
-          <Input defaultValue="January" />
+          <Label>ဘဏ္ဍာရေးနှစ်စတင်</Label>
+          <Input defaultValue="ဇန်နဝါရီ" />
         </div>
       </div>
-      <Button className="gap-2" onClick={() => toast({ title: "Company settings saved" })}><Save className="h-4 w-4" />Save Company Info</Button>
+      <Button className="gap-2" onClick={() => toast({ title: "ကုမ္ပဏီအချက်အလက်သိမ်းပြီး" })}><Save className="h-4 w-4" />ကုမ္ပဏီအချက်အလက်သိမ်းမည်</Button>
     </div>
   );
 }
@@ -253,11 +253,11 @@ export default function Settings() {
     <div className="max-w-4xl">
       <Tabs defaultValue="profile">
         <TabsList className="mb-6">
-          <TabsTrigger value="profile" className="gap-1.5"><UserIcon className="h-4 w-4" />Profile</TabsTrigger>
-          <TabsTrigger value="pipeline" className="gap-1.5"><GitBranch className="h-4 w-4" />Pipeline</TabsTrigger>
-          <TabsTrigger value="team" className="gap-1.5"><Users className="h-4 w-4" />Team</TabsTrigger>
-          <TabsTrigger value="company" className="gap-1.5"><Building2 className="h-4 w-4" />Company</TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-1.5"><Bell className="h-4 w-4" />Notifications</TabsTrigger>
+          <TabsTrigger value="profile" className="gap-1.5"><UserIcon className="h-4 w-4" />ကိုယ်ရေး</TabsTrigger>
+          <TabsTrigger value="pipeline" className="gap-1.5"><GitBranch className="h-4 w-4" />ဈေးကွက်ဆင့်</TabsTrigger>
+          <TabsTrigger value="team" className="gap-1.5"><Users className="h-4 w-4" />အဖွဲ့</TabsTrigger>
+          <TabsTrigger value="company" className="gap-1.5"><Building2 className="h-4 w-4" />ကုမ္ပဏီ</TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-1.5"><Bell className="h-4 w-4" />အကြောင်းကြားချက်</TabsTrigger>
         </TabsList>
         <TabsContent value="profile"><ProfileTab /></TabsContent>
         <TabsContent value="pipeline"><PipelineTab /></TabsContent>

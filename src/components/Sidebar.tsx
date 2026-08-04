@@ -12,38 +12,38 @@ import { useState } from "react";
 
 const navGroups = [
   {
-    label: "Overview",
+    label: "ခြုံငုံသုံးသပ်ချက်",
     items: [
-      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+      { to: "/", label: "ပင်မစာမျက်နှာ", icon: LayoutDashboard, end: true },
     ],
   },
   {
-    label: "Sales",
+    label: "အရောင်း",
     items: [
-      { to: "/leads", label: "Leads", icon: Target },
-      { to: "/contacts", label: "Contacts", icon: Users },
-      { to: "/deals", label: "Pipeline", icon: TrendingUp },
-      { to: "/customers", label: "Customers", icon: UserCheck },
+      { to: "/leads", label: "လိဒ်များ", icon: Target },
+      { to: "/contacts", label: "အဆက်အသွယ်များ", icon: Users },
+      { to: "/deals", label: "ဈေးကွက်စီမံ", icon: TrendingUp },
+      { to: "/customers", label: "ဖောက်သည်များ", icon: UserCheck },
     ],
   },
   {
-    label: "Inventory",
+    label: "ကုန်လက်ကျန်",
     items: [
-      { to: "/products", label: "Products", icon: Package },
-      { to: "/sales", label: "Sales Orders", icon: ShoppingCart },
+      { to: "/products", label: "ကုန်ပစ္စည်းများ", icon: Package },
+      { to: "/sales", label: "အရောင်းမှာယူမှုများ", icon: ShoppingCart },
     ],
   },
   {
-    label: "Productivity",
+    label: "ထုတ်လုပ်နိုင်မှု",
     items: [
-      { to: "/tasks", label: "Tasks", icon: CheckSquare },
-      { to: "/reports", label: "Reports", icon: BarChart3 },
+      { to: "/tasks", label: "လုပ်ဆောင်ချက်များ", icon: CheckSquare },
+      { to: "/reports", label: "အစီရင်ခံစာများ", icon: BarChart3 },
     ],
   },
   {
-    label: "System",
+    label: "စနစ်",
     items: [
-      { to: "/settings", label: "Settings", icon: Settings },
+      { to: "/settings", label: "ဆက်တင်များ", icon: Settings },
     ],
   },
 ];
@@ -133,15 +133,15 @@ export default function Sidebar() {
               "flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors",
               collapsed ? "justify-center w-full" : "flex-1"
             )}
-            title="Logout"
+            title="ထွက်မည်"
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Logout</span>}
+            {!collapsed && <span>ထွက်မည်</span>}
           </button>
           <button
             onClick={() => setCollapsed((c) => !c)}
             className="flex items-center justify-center p-2 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-white transition-colors"
-            title={collapsed ? "Expand" : "Collapse"}
+            title={collapsed ? "ချဲ့မည်" : "ခေါ်ရင်ခြုံ့မည်"}
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>

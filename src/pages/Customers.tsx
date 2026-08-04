@@ -16,7 +16,6 @@ export default function Customers() {
   const { data: deals = [] } = useQuery({ queryKey: ["deals"], queryFn: () => api.get<Deal[]>("/api/deals") });
   const { data: contacts = [] } = useQuery({ queryKey: ["contacts"], queryFn: () => api.get<Contact[]>("/api/contacts") });
 
-  // Customers = contacts linked to Closed Won deals
   const wonDeals = deals.filter((d) => d.stage === "Closed Won");
   const customerContactIds = new Set(wonDeals.map((d) => d.contactId).filter(Boolean));
   const customers = contacts.filter((c) => customerContactIds.has(c.id));
@@ -34,10 +33,10 @@ export default function Customers() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total Customers", value: String(customers.length), icon: Building2, color: "text-blue-600 bg-blue-50" },
-          { label: "Total Revenue", value: formatCurrency(totalRevenue), icon: DollarSign, color: "text-emerald-600 bg-emerald-50" },
-          { label: "Deals Closed", value: String(wonDeals.length), icon: TrendingUp, color: "text-indigo-600 bg-indigo-50" },
-          { label: "Avg Deal Size", value: formatCurrency(avgDealSize), icon: DollarSign, color: "text-amber-600 bg-amber-50" },
+          { label: "ဖောက်သည်စုစုပေါင်း", value: String(customers.length), icon: Building2, color: "text-blue-600 bg-blue-50" },
+          { label: "စုစုပေါင်းဝင်ငွေ", value: formatCurrency(totalRevenue), icon: DollarSign, color: "text-emerald-600 bg-emerald-50" },
+          { label: "ပိတ်ဆင်းသောဈေးကွက်", value: String(wonDeals.length), icon: TrendingUp, color: "text-indigo-600 bg-indigo-50" },
+          { label: "ပျမ်းမျှဈေးကွက်တန်ဖိုး", value: formatCurrency(avgDealSize), icon: DollarSign, color: "text-amber-600 bg-amber-50" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-lg border p-4 flex items-center gap-3">
             <div className={`h-10 w-10 rounded-full flex items-center justify-center ${s.color}`}>
@@ -53,14 +52,14 @@ export default function Customers() {
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <Input placeholder="Search customers..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <Input placeholder="ဖောက်သည်ရှာဖွေမည်..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       {filtered.length === 0 && (
         <div className="py-12 text-center text-sm text-gray-400">
           {customers.length === 0
-            ? "No customers yet — close some deals to see them here."
-            : "No customers match your search."}
+            ? "ဖောက်သည်မရှိသေး — ဈေးကွက်ပိတ်ဆင်းမှသာ ဤနေရာတွင် ပေါ်လာမည်။"
+            : "ရှာဖွေမှုနှင့် ကိုက်ညီသောဖောက်သည် မတွေ့ပါ။"}
         </div>
       )}
 
@@ -82,7 +81,7 @@ export default function Customers() {
                   <div>
                     <div className="font-semibold text-gray-900">{customer.firstName} {customer.lastName}</div>
                     {customer.position && <div className="text-xs text-gray-500">{customer.position}</div>}
-                    <Badge variant="success" className="mt-0.5">Customer</Badge>
+                    <Badge variant="success" className="mt-0.5">ဖောက်သည်</Badge>
                   </div>
                 </div>
 
@@ -106,18 +105,18 @@ export default function Customers() {
                 <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-2 text-center">
                   <div className="bg-gray-50 rounded p-2">
                     <div className="text-sm font-bold text-emerald-600">{formatCurrency(totalValue)}</div>
-                    <div className="text-xs text-gray-400">Total Value</div>
+                    <div className="text-xs text-gray-400">စုစုပေါင်းတန်ဖိုး</div>
                   </div>
                   <div className="bg-gray-50 rounded p-2">
                     <div className="text-sm font-bold text-indigo-600">{customerDeals.length}</div>
-                    <div className="text-xs text-gray-400">Deals Won</div>
+                    <div className="text-xs text-gray-400">နိုင်ရသောဈေးကွက်</div>
                   </div>
                 </div>
 
                 {latestDeal && (
                   <div className="mt-2 text-xs text-gray-400 flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    Last deal: {latestDeal.title} · {formatDate(latestDeal.updatedAt)}
+                    နောက်ဆုံးဈေးကွက်: {latestDeal.title} · {formatDate(latestDeal.updatedAt)}
                   </div>
                 )}
               </CardContent>
