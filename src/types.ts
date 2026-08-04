@@ -97,6 +97,11 @@ export interface DashboardStats {
   totalCustomers: number;
   customersGrowth: number;
   lowStockItems: number;
+  todayNetProfit: number;
+  monthNetProfit: number;
+  yearNetProfit: number;
+  totalCapital: number;
+  totalInventoryValue: number;
 }
 
 export interface RevenueData {

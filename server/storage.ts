@@ -306,16 +306,47 @@ export const db = {
 
   // Dashboard
   getDashboardStats: () => {
-    const confirmedSales = sales.filter((s) => s.status === "confirmed" || s.status === "delivered");
-    const totalRevenue   = confirmedSales.reduce((sum, s) => sum + s.total, 0);
-    const salesCount     = sales.length;
+    const now            = new Date();
+    const todayStr       = now.toISOString().slice(0, 10);
+    const currentYear    = now.getFullYear();
+    const currentMonth   = now.getMonth();
+
+    const confirmedSales  = sales.filter((s) => s.status === "confirmed" || s.status === "delivered");
+    const totalRevenue    = confirmedSales.reduce((sum, s) => sum + s.total, 0);
+    const salesCount      = sales.length;
     const uniqueCustomers = new Set(sales.map((s) => s.contactId).filter(Boolean)).size;
-    const lowStockItems  = products.filter((p) => p.stock !== undefined && p.minStock !== undefined && p.stock < p.minStock).length;
+    const lowStockItems   = products.filter((p) => p.stock !== undefined && p.minStock !== undefined && p.stock < p.minStock).length;
+
+    // Product cost lookup
+    const costMap = new Map(products.map((p) => [p.id, p.cost ?? 0]));
+
+    // Net profit = revenue - COGS for a set of sales
+    const netProfit = (list: typeof sales) =>
+      list.reduce((sum, s) => {
+        const cogs = s.items.reduce((c, item) => c + (costMap.get(item.productId) ?? 0) * item.quantity, 0);
+        return sum + s.total - cogs;
+      }, 0);
+
+    const todaySales = confirmedSales.filter((s) => s.date === todayStr);
+    const monthSales = confirmedSales.filter((s) => {
+      const d = new Date(s.date);
+      return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    });
+    const yearSales  = confirmedSales.filter((s) => new Date(s.date).getFullYear() === currentYear);
+
+    const todayNetProfit      = netProfit(todaySales);
+    const monthNetProfit      = netProfit(monthSales);
+    const yearNetProfit       = netProfit(yearSales);
+    const totalCapital        = products.reduce((sum, p) => sum + (p.cost ?? 0) * (p.stock ?? 0), 0);
+    const totalInventoryValue = products.reduce((sum, p) => sum + p.price * (p.stock ?? 0), 0);
+
     return {
       totalRevenue,   revenueGrowth:   18.5,
       salesCount,     salesGrowth:     12.3,
       totalCustomers: uniqueCustomers, customersGrowth: 8.0,
       lowStockItems,
+      todayNetProfit, monthNetProfit, yearNetProfit,
+      totalCapital,   totalInventoryValue,
     };
   },
 

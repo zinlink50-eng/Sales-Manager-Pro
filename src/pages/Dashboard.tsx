@@ -4,7 +4,7 @@ import type { DashboardStats, RevenueData, Activity, Sale, Product } from "@/typ
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   TrendingUp, TrendingDown, DollarSign, Users, ShoppingCart, AlertTriangle,
-  Phone, Mail, Calendar, FileText, CheckCircle, Package,
+  Phone, Mail, Calendar, FileText, CheckCircle, Package, Banknote, BarChart3, Warehouse,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -14,47 +14,60 @@ import { formatCurrency, formatRelativeDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 const activityIcons: Record<string, { icon: React.ElementType; color: string }> = {
-  call:           { icon: Phone,         color: "text-blue-500 bg-blue-50"    },
+  call:           { icon: Phone,         color: "text-blue-500 bg-blue-50"     },
   email:          { icon: Mail,          color: "text-purple-500 bg-purple-50" },
-  meeting:        { icon: Calendar,      color: "text-green-500 bg-green-50"  },
-  note:           { icon: FileText,      color: "text-gray-500 bg-gray-50"    },
-  deal_created:   { icon: ShoppingCart,  color: "text-indigo-500 bg-indigo-50"},
+  meeting:        { icon: Calendar,      color: "text-green-500 bg-green-50"   },
+  note:           { icon: FileText,      color: "text-gray-500 bg-gray-50"     },
+  deal_created:   { icon: ShoppingCart,  color: "text-indigo-500 bg-indigo-50" },
   task_completed: { icon: CheckCircle,   color: "text-emerald-500 bg-emerald-50" },
 };
 
-function KpiCard({ title, value, growth, icon: Icon }: {
-  title: string; value: number | string; growth: number; icon: React.ElementType;
+function KpiCard({ title, value, growth, icon: Icon, accent = "blue" }: {
+  title: string;
+  value: number | string;
+  growth?: number;
+  icon: React.ElementType;
+  accent?: "blue" | "emerald" | "violet" | "amber" | "rose";
 }) {
-  const isPositive = growth >= 0;
+  const accentMap = {
+    blue:    "bg-blue-50 text-blue-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    violet:  "bg-violet-50 text-violet-600",
+    amber:   "bg-amber-50 text-amber-600",
+    rose:    "bg-rose-50 text-rose-600",
+  };
+  const isPositive = (growth ?? 0) >= 0;
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="pt-5 pb-4">
         <div className="flex items-start justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold mt-1">
+          <div className="min-w-0 flex-1 pr-2">
+            <p className="text-xs text-muted-foreground leading-tight">{title}</p>
+            <p className="text-xl font-bold mt-1 truncate">
               {typeof value === "number" ? value.toLocaleString() : value}
             </p>
           </div>
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Icon className="h-5 w-5 text-primary" />
+          <div className={cn("h-9 w-9 rounded-full flex items-center justify-center shrink-0", accentMap[accent])}>
+            <Icon className="h-4 w-4" />
           </div>
         </div>
-        <div className={cn("flex items-center gap-1 mt-3 text-xs font-medium", isPositive ? "text-emerald-600" : "text-red-600")}>
-          {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-          {Math.abs(growth)}% ယခင်လနှင့် နှိုင်းယှဉ်
-        </div>
+        {growth !== undefined && (
+          <div className={cn("flex items-center gap-1 mt-2 text-xs font-medium", isPositive ? "text-emerald-600" : "text-red-600")}>
+            {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {Math.abs(growth)}% ယခင်လနှင့် နှိုင်းယှဉ်
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
 export default function Dashboard() {
-  const { data: stats }      = useQuery({ queryKey: ["dashboard-stats"],    queryFn: () => api.get<DashboardStats>("/api/dashboard/stats") });
-  const { data: revenue }    = useQuery({ queryKey: ["dashboard-revenue"],  queryFn: () => api.get<RevenueData[]>("/api/dashboard/revenue") });
+  const { data: stats }      = useQuery({ queryKey: ["dashboard-stats"],      queryFn: () => api.get<DashboardStats>("/api/dashboard/stats") });
+  const { data: revenue }    = useQuery({ queryKey: ["dashboard-revenue"],    queryFn: () => api.get<RevenueData[]>("/api/dashboard/revenue") });
   const { data: activities } = useQuery({ queryKey: ["dashboard-activities"], queryFn: () => api.get<Activity[]>("/api/dashboard/activities") });
-  const { data: products = [] } = useQuery({ queryKey: ["products"],         queryFn: () => api.get<Product[]>("/api/products") });
-  const { data: sales = [] }    = useQuery({ queryKey: ["sales"],            queryFn: () => api.get<Sale[]>("/api/sales") });
+  const { data: products = [] } = useQuery({ queryKey: ["products"],          queryFn: () => api.get<Product[]>("/api/products") });
+  const { data: sales = [] }    = useQuery({ queryKey: ["sales"],             queryFn: () => api.get<Sale[]>("/api/sales") });
 
   // Top 5 products by quantity sold
   const productSales = sales
@@ -74,36 +87,81 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="space-y-6">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          title="စုစုပေါင်းဝင်ငွေ"
-          value={stats ? formatCurrency(stats.totalRevenue) : "—"}
-          growth={stats?.revenueGrowth ?? 0}
-          icon={DollarSign}
-        />
-        <KpiCard
-          title="အရောင်းစုစုပေါင်း"
-          value={stats?.salesCount ?? 0}
-          growth={stats?.salesGrowth ?? 0}
-          icon={ShoppingCart}
-        />
-        <KpiCard
-          title="ဖောက်သည်စုစုပေါင်း"
-          value={stats?.totalCustomers ?? 0}
-          growth={stats?.customersGrowth ?? 0}
-          icon={Users}
-        />
-        <KpiCard
-          title="ကုန်ပြတ်လုနီး"
-          value={stats?.lowStockItems ?? 0}
-          growth={-(stats?.lowStockItems ?? 0)}
-          icon={AlertTriangle}
-        />
+    <div className="space-y-5">
+
+      {/* ── Row 1: Operational KPIs ── */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">လုပ်ငန်းအချက်အလက်</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiCard
+            title="စုစုပေါင်းဝင်ငွေ"
+            value={stats ? formatCurrency(stats.totalRevenue) : "—"}
+            growth={stats?.revenueGrowth}
+            icon={DollarSign}
+            accent="blue"
+          />
+          <KpiCard
+            title="အရောင်းအကြိမ်ရေ"
+            value={stats?.salesCount ?? 0}
+            growth={stats?.salesGrowth}
+            icon={ShoppingCart}
+            accent="violet"
+          />
+          <KpiCard
+            title="ဖောက်သည်စုစုပေါင်း"
+            value={stats?.totalCustomers ?? 0}
+            growth={stats?.customersGrowth}
+            icon={Users}
+            accent="emerald"
+          />
+          <KpiCard
+            title="ကုန်ပြတ်လုနီး (မျိုး)"
+            value={stats?.lowStockItems ?? 0}
+            growth={stats?.lowStockItems ? -(stats.lowStockItems) : undefined}
+            icon={AlertTriangle}
+            accent="amber"
+          />
+        </div>
       </div>
 
-      {/* Charts */}
+      {/* ── Row 2: Profit & Capital KPIs ── */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">အမြတ်အစွန်း နှင့် ရင်းနှီးငွေ</p>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <KpiCard
+            title="ယနေ့ အမြတ်"
+            value={stats ? formatCurrency(stats.todayNetProfit) : "—"}
+            icon={Banknote}
+            accent="emerald"
+          />
+          <KpiCard
+            title="ယခုလ အမြတ်"
+            value={stats ? formatCurrency(stats.monthNetProfit) : "—"}
+            icon={TrendingUp}
+            accent="emerald"
+          />
+          <KpiCard
+            title="ယခုနှစ် အမြတ်"
+            value={stats ? formatCurrency(stats.yearNetProfit) : "—"}
+            icon={BarChart3}
+            accent="blue"
+          />
+          <KpiCard
+            title="အရင်းငွေစုစုပေါင်း"
+            value={stats ? formatCurrency(stats.totalCapital) : "—"}
+            icon={Warehouse}
+            accent="violet"
+          />
+          <KpiCard
+            title="ကုန်ပစ္စည်းတန်ဖိုးစုစုပေါင်း"
+            value={stats ? formatCurrency(stats.totalInventoryValue) : "—"}
+            icon={Package}
+            accent="amber"
+          />
+        </div>
+      </div>
+
+      {/* ── Charts ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Revenue Chart */}
         <Card className="lg:col-span-2">
@@ -115,8 +173,8 @@ export default function Dashboard() {
               <AreaChart data={revenue} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}   />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -177,7 +235,7 @@ export default function Dashboard() {
           <div className="space-y-4">
             {activities?.map((activity) => {
               const config = activityIcons[activity.type] || activityIcons.note;
-              const Icon = config.icon;
+              const Icon   = config.icon;
               return (
                 <div key={activity.id} className="flex items-start gap-3">
                   <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0", config.color)}>
