@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   Plus, Search, MoreHorizontal, Eye, Trash2, ShoppingCart,
-  DollarSign, TrendingUp, Package, X, Minus, UserPlus,
+  DollarSign, TrendingUp, Package, X, Minus, UserPlus, ZoomIn,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +55,30 @@ function ProductThumb({
   );
 }
 
+// ── Image Lightbox ────────────────────────────────────────
+function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+      <button
+        className="absolute top-4 right-4 text-white bg-black/60 hover:bg-black/80 rounded-full p-2.5 transition-colors"
+        onClick={onClose}
+        aria-label="ပိတ်မည်"
+      >
+        <X className="h-5 w-5" />
+      </button>
+    </div>
+  );
+}
+
 // ── Quick Add Customer mini-dialog ────────────────────────
 function AddCustomerDialog({
   open, onClose, onCreated,
@@ -90,7 +114,7 @@ function AddCustomerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-sm:inset-0 max-sm:[transform:none] max-sm:max-w-none max-sm:h-screen max-sm:rounded-none overflow-y-auto sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-4 w-4 text-primary" />
@@ -153,6 +177,7 @@ function SaleForm({
   const [mobileTab, setMobileTab] = useState<"products" | "cart">("products");
   const [contacts, setContacts]   = useState<Contact[]>(initialContacts);
   const [addCustOpen, setAddCustOpen] = useState(false);
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | undefined>();
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -210,13 +235,13 @@ function SaleForm({
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button type="button" onClick={() => updateQty(i, -1)}
-                className="h-6 w-6 rounded border flex items-center justify-center hover:bg-gray-100 active:scale-95">
-                <Minus className="h-2.5 w-2.5" />
+                className="h-9 w-9 rounded-lg border-2 flex items-center justify-center hover:bg-gray-100 active:scale-95 touch-manipulation">
+                <Minus className="h-4 w-4" />
               </button>
-              <span className="text-xs font-bold w-6 text-center">{item.quantity}</span>
+              <span className="text-sm font-bold w-8 text-center">{item.quantity}</span>
               <button type="button" onClick={() => updateQty(i, 1)}
-                className="h-6 w-6 rounded border flex items-center justify-center hover:bg-gray-100 active:scale-95">
-                <Plus className="h-2.5 w-2.5" />
+                className="h-9 w-9 rounded-lg border-2 border-primary/40 bg-primary/5 flex items-center justify-center hover:bg-primary/10 active:scale-95 touch-manipulation text-primary">
+                <Plus className="h-4 w-4" />
               </button>
             </div>
             <button type="button" onClick={() => removeFromCart(i)} className="text-gray-300 hover:text-red-500 ml-1">
@@ -249,40 +274,53 @@ function SaleForm({
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-2 min-h-0">
-        <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 content-start">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 content-start">
           {filteredProducts.map((p) => {
             const inCart = cart.find((c) => c.productId === p.id);
             const isLow  = p.stock !== undefined && p.stock !== null && p.stock < (p.minStock ?? 5);
             return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => { addToCart(p); setMobileTab("cart"); }}
-                className={cn(
-                  "relative flex flex-col items-center gap-1 rounded-xl border text-center transition-all",
-                  "hover:shadow-md hover:border-primary/50 active:scale-95 overflow-hidden pb-2",
-                  inCart ? "border-primary bg-primary/5 shadow-sm" : "border-gray-200 bg-white"
-                )}
-              >
-                {/* Image area — taller, fills top */}
-                <div className="w-full aspect-square overflow-hidden bg-gray-50 rounded-t-xl">
-                  <ProductThumb imageUrl={p.imageUrl} name={p.name} className="rounded-t-xl" />
-                </div>
-                <div className="px-1 w-full">
-                  <div className="text-[11px] font-semibold text-gray-800 leading-tight line-clamp-2">{p.name}</div>
-                  <div className="text-xs font-bold text-primary mt-0.5">{formatCurrency(p.price)}</div>
-                  {p.stock !== undefined && (
-                    <div className={cn("text-[10px] mt-0.5", isLow ? "text-red-500" : "text-gray-400")}>
-                      {isLow ? "⚠ " : ""}{p.stock} {p.unit}
+              /* Wrapper div — needed so the zoom button is a sibling of the card button (no nesting) */
+              <div key={p.id} className="relative">
+                <button
+                  type="button"
+                  onClick={() => { addToCart(p); setMobileTab("cart"); }}
+                  className={cn(
+                    "relative flex flex-col items-center w-full rounded-xl border text-center transition-all",
+                    "hover:shadow-md hover:border-primary/50 active:scale-95 overflow-hidden pb-2 touch-manipulation",
+                    inCart ? "border-primary bg-primary/5 shadow-sm" : "border-gray-200 bg-white"
+                  )}
+                >
+                  {/* Image area — 4:3 ratio */}
+                  <div className="w-full aspect-[4/3] overflow-hidden bg-gray-50 rounded-t-xl">
+                    <ProductThumb imageUrl={p.imageUrl} name={p.name} className="rounded-t-xl" />
+                  </div>
+                  <div className="px-2 pt-1.5 pb-0.5 w-full">
+                    <div className="text-[13px] font-semibold text-gray-800 leading-tight line-clamp-2">{p.name}</div>
+                    <div className="text-sm font-bold text-primary mt-1">{formatCurrency(p.price)}</div>
+                    {p.stock !== undefined && (
+                      <div className={cn("text-[11px] mt-0.5", isLow ? "text-red-500 font-medium" : "text-gray-400")}>
+                        {isLow ? "⚠ " : ""}{p.stock} {p.unit}
+                      </div>
+                    )}
+                  </div>
+                  {inCart && (
+                    <div className="absolute top-2 right-2 h-6 w-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shadow-md">
+                      {inCart.quantity}
                     </div>
                   )}
-                </div>
-                {inCart && (
-                  <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary text-white text-[10px] flex items-center justify-center font-bold shadow">
-                    {inCart.quantity}
-                  </div>
+                </button>
+                {/* Zoom button — sibling of card button, positioned over image corner */}
+                {p.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox({ src: p.imageUrl!, alt: p.name })}
+                    className="absolute top-1.5 left-1.5 h-7 w-7 rounded-full bg-black/40 hover:bg-black/70 flex items-center justify-center text-white transition-colors z-10 touch-manipulation"
+                    aria-label="ပုံကြည့်မည်"
+                  >
+                    <ZoomIn className="h-3.5 w-3.5" />
+                  </button>
                 )}
-              </button>
+              </div>
             );
           })}
           {filteredProducts.length === 0 && (
@@ -295,6 +333,9 @@ function SaleForm({
 
   return (
     <>
+      {lightbox && (
+        <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(undefined)} />
+      )}
       <AddCustomerDialog
         open={addCustOpen}
         onClose={() => setAddCustOpen(false)}
@@ -417,7 +458,7 @@ function SaleForm({
             </button>
           </div>
           {/* Active panel */}
-          <div className="border rounded-xl overflow-hidden" style={{ height: 380 }}>
+          <div className="border rounded-xl overflow-hidden" style={{ height: 480 }}>
             {mobileTab === "products" ? <ProductGrid /> : <CartPanel />}
           </div>
         </div>
@@ -457,7 +498,7 @@ function SaleDetailModal({ sale, products, onClose }: {
 }) {
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-sm:inset-0 max-sm:[transform:none] max-sm:max-w-none max-sm:h-screen max-sm:rounded-none overflow-y-auto sm:max-w-lg sm:max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
             အရောင်း #{String(sale.id).padStart(4, "0")} — {formatDate(sale.date)}
@@ -687,7 +728,7 @@ export default function Sales() {
 
       {/* New Sale dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="w-full max-w-3xl max-h-[92vh] overflow-y-auto">
+        <DialogContent className="max-sm:inset-0 max-sm:[transform:none] max-sm:max-w-none max-sm:h-screen max-sm:rounded-none overflow-y-auto w-full sm:max-w-3xl sm:max-h-[92vh]">
           <DialogHeader>
             <DialogTitle>အရောင်းအသစ်မှတ်တမ်းတင်မည်</DialogTitle>
           </DialogHeader>

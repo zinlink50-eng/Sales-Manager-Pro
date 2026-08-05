@@ -1,7 +1,9 @@
-import { Bell, Search, Plus } from "lucide-react";
+import { Bell, Search, Plus, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocation, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { canAccess, type Role } from "@/lib/rbac";
 
 const pageMeta: Record<string, { title: string; subtitle: string; action?: { label: string; to: string } }> = {
   "/":          { title: "ပင်မစာမျက်နှာ",   subtitle: "အရောင်းအနေအထားကို ချက်ချင်းကြည့်ရှုနိုင်သည်" },
@@ -15,7 +17,10 @@ const pageMeta: Record<string, { title: string; subtitle: string; action?: { lab
 
 export default function Header() {
   const location = useLocation();
+  const { user } = useAuth();
+  const role = (user?.role ?? "sales_rep") as Role;
   const meta = pageMeta[location.pathname] ?? { title: "Sales Manager Pro", subtitle: "" };
+  const hasSettings = canAccess(role, "/settings");
 
   return (
     <header className="h-16 border-b bg-white flex items-center px-4 md:px-6 gap-4 shrink-0">
@@ -37,6 +42,20 @@ export default function Header() {
           <Bell className="h-5 w-5 text-gray-600" />
           <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full" />
         </Button>
+
+        {/* Settings shortcut — mobile only, only for roles with access */}
+        {hasSettings && (
+          <Link to="/settings" className="lg:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={location.pathname === "/settings" ? "text-primary" : "text-gray-600"}
+              title="ဆက်တင်"
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          </Link>
+        )}
 
         {meta.action && (
           <Link to={meta.action.to}>

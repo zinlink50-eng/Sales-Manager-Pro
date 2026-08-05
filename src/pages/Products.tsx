@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Edit, Trash2, Package, AlertTriangle, TrendingUp, DollarSign, RefreshCw, Image, Barcode } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Edit, Trash2, Package, AlertTriangle, TrendingUp, DollarSign, RefreshCw, Image, Barcode, X, ZoomIn } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,30 @@ function ProductThumb({ imageUrl, name, size = 10 }: { imageUrl?: string; name: 
   return (
     <div className={`h-${size} w-${size} rounded-lg bg-gray-100 flex items-center justify-center`}>
       <Package className="h-4 w-4 text-gray-300" />
+    </div>
+  );
+}
+
+// ── Image Lightbox ────────────────────────────────────────
+function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+      <button
+        className="absolute top-4 right-4 text-white bg-black/60 hover:bg-black/80 rounded-full p-2.5 transition-colors"
+        onClick={onClose}
+        aria-label="ပိတ်မည်"
+      >
+        <X className="h-5 w-5" />
+      </button>
     </div>
   );
 }
@@ -274,6 +298,7 @@ export default function Products() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Product | undefined>();
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | undefined>();
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -382,7 +407,14 @@ export default function Products() {
                       {/* Name + image */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
+                          <button
+                          type="button"
+                          onClick={() => product.imageUrl && setLightbox({ src: product.imageUrl, alt: product.name })}
+                          className={cn("block shrink-0", product.imageUrl ? "cursor-zoom-in" : "cursor-default")}
+                          title={product.imageUrl ? "ပုံကြည့်မည်" : undefined}
+                        >
                           <ProductThumb imageUrl={product.imageUrl} name={product.name} size={10} />
+                        </button>
                           <div>
                             <div className="font-medium text-sm text-gray-900">{product.name}</div>
                             {product.description && <div className="text-xs text-gray-400 truncate max-w-36">{product.description}</div>}
@@ -458,7 +490,7 @@ export default function Products() {
 
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) setEditing(undefined); }}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-sm:inset-0 max-sm:[transform:none] max-sm:max-w-none max-sm:h-screen max-sm:rounded-none overflow-y-auto sm:max-w-xl sm:max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>{editing ? "ကုန်ပစ္စည်းပြင်ဆင်မည်" : "ကုန်ပစ္စည်းအသစ်ထည့်မည်"}</DialogTitle>
           </DialogHeader>
@@ -469,6 +501,10 @@ export default function Products() {
           />
         </DialogContent>
       </Dialog>
+
+      {lightbox && (
+        <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(undefined)} />
+      )}
     </div>
   );
 }
