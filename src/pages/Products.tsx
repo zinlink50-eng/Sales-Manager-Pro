@@ -53,6 +53,7 @@ function ProductThumb({ imageUrl, name, size = 10 }: { imageUrl?: string; name: 
 function ProductForm({ product, onSubmit, onClose }: {
   product?: Product; onSubmit: (data: any) => void; onClose: () => void;
 }) {
+  const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: product?.name ?? "",
@@ -72,10 +73,42 @@ function ProductForm({ product, onSubmit, onClose }: {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    // Reset so the same file can be re-selected after clearing
+    e.target.value = "";
     if (!file) return;
-    if (file.size > 1024 * 1024) return;
+
+    // 5 MB hard cap before even reading
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "ပုံဖိုင်အရမ်းကြီးသည်", description: "5 MB အောက်ဖိုင်ကိုသာ ရွေးပါ", variant: "destructive" });
+      return;
+    }
+
     const reader = new FileReader();
-    reader.onload = (ev) => set("imageUrl", ev.target?.result as string);
+    reader.onload = (ev) => {
+      const src = ev.target?.result as string;
+      // Compress / resize via an offscreen canvas so the base64 payload is small
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX = 600; // max dimension in px
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round((height * MAX) / width); width = MAX; }
+          else                { width  = Math.round((width  * MAX) / height); height = MAX; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width  = width;
+        canvas.height = height;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+        // JPEG at 80% quality — typical result is 20-80 KB base64
+        const compressed = canvas.toDataURL("image/jpeg", 0.8);
+        set("imageUrl", compressed);
+      };
+      img.onerror = () => {
+        // Fallback: just use the raw base64 if the Image decode fails
+        set("imageUrl", src);
+      };
+      img.src = src;
+    };
     reader.readAsDataURL(file);
   };
 
