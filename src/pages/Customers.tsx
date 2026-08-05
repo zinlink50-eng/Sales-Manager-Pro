@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { salesOffline, contactsOffline } from "@/lib/offline-api";
 import type { Sale, Contact } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +13,8 @@ import { Search } from "lucide-react";
 export default function Customers() {
   const [search, setSearch] = useState("");
 
-  const { data: sales = [] }    = useQuery({ queryKey: ["sales"],    queryFn: () => api.get<Sale[]>("/api/sales") });
-  const { data: contacts = [] } = useQuery({ queryKey: ["contacts"], queryFn: () => api.get<Contact[]>("/api/contacts") });
+  const { data: sales = [] }    = useQuery({ queryKey: ["sales"],    queryFn: salesOffline.list });
+  const { data: contacts = [] } = useQuery({ queryKey: ["contacts"], queryFn: contactsOffline.list });
 
   // Build customer list: contacts who appear in at least one sale
   const customerIds = new Set(sales.map((s) => s.contactId).filter(Boolean));

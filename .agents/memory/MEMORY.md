@@ -1,0 +1,3 @@
+- [Offline-First Data Layer](offline-first-data-layer.md) — reads always from IndexedDB via offline-api.ts; writes go to server (online) or outbox (offline); never call api.ts directly from pages
+- [Mobile POS Layout](mobile-pos-layout.md) — single-col horizontal cards (< sm); 2-col square-image grid (sm+); all modals fullscreen on mobile
+- [SyncProvider Wiring](sync-provider-wiring.md) — SyncProvider must sit inside QueryClientProvider + AuthProvider in App.tsx; OfflineBanner lives in Layout.tsx (inside SyncProvider tree)

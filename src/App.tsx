@@ -3,6 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { BrandingProvider } from "@/contexts/BrandingContext";
+import { SyncProvider } from "@/contexts/SyncContext";
 import Layout from "@/components/Layout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -18,7 +19,7 @@ import { canAccess, HOME_ROUTE, type Role } from "@/lib/rbac";
 function RoleGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const location = useLocation();
-  if (!user) return null; // outer guard already handles unauthenticated
+  if (!user) return null;
   const role = user.role as Role;
   if (!canAccess(role, location.pathname)) {
     return <Navigate to={HOME_ROUTE[role]} replace />;
@@ -130,12 +131,14 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrandingProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<PublicRoute />} />
-              <Route path="/*"    element={<ProtectedRoutes />} />
-            </Routes>
-          </BrowserRouter>
+          <SyncProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<PublicRoute />} />
+                <Route path="/*"    element={<ProtectedRoutes />} />
+              </Routes>
+            </BrowserRouter>
+          </SyncProvider>
         </BrandingProvider>
       </AuthProvider>
     </QueryClientProvider>

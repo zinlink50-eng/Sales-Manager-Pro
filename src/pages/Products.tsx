@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { productsOffline } from "@/lib/offline-api";
 import type { Product } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -302,22 +302,22 @@ export default function Products() {
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
-    queryFn: () => api.get<Product[]>("/api/products"),
+    queryFn: productsOffline.list,
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["products"] });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => api.post("/api/products", data),
+    mutationFn: (data: any) => productsOffline.create(data),
     onSuccess: () => { invalidate(); setDialogOpen(false); toast({ title: "ကုန်ပစ္စည်းထည့်ပြီး" }); },
     onError: (e: any) => toast({ title: "အမှား", description: e.message, variant: "destructive" }),
   });
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/api/products/${id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) => productsOffline.update(id, data),
     onSuccess: () => { invalidate(); setDialogOpen(false); setEditing(undefined); toast({ title: "ကုန်ပစ္စည်းပြင်ဆင်ပြီး" }); },
   });
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/api/products/${id}`),
+    mutationFn: (id: number) => productsOffline.delete(id),
     onSuccess: () => { invalidate(); toast({ title: "ကုန်ပစ္စည်းဖျက်ပြီး" }); },
   });
 

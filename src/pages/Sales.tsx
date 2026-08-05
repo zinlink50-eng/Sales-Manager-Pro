@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { salesOffline, productsOffline, contactsOffline, usersOffline } from "@/lib/offline-api";
 import type { Sale, Product, Contact, User } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import {
   Plus, Search, MoreHorizontal, Eye, Trash2, ShoppingCart,
   DollarSign, TrendingUp, Package, X, Minus, UserPlus, ZoomIn,
+  ChevronLeft,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -49,7 +50,7 @@ function ProductThumb({
     );
   }
   return (
-    <div className={cn("h-full w-full bg-gray-100 flex items-center justify-center", className)}>
+    <div className={cn("h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center", className)}>
       <Package className="h-1/2 w-1/2 text-gray-300" />
     </div>
   );
@@ -57,29 +58,37 @@ function ProductThumb({
 
 // ── Image Lightbox ────────────────────────────────────────
 function ImageLightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  // Close on Escape key
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
   return (
     <div
-      className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center"
       onClick={onClose}
     >
       <img
         src={src}
         alt={alt}
-        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+        className="max-w-[92vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       />
       <button
-        className="absolute top-4 right-4 text-white bg-black/60 hover:bg-black/80 rounded-full p-2.5 transition-colors"
+        className="absolute top-5 right-5 text-white bg-white/10 hover:bg-white/25 rounded-full p-3 transition-colors backdrop-blur-sm"
         onClick={onClose}
         aria-label="ပိတ်မည်"
       >
-        <X className="h-5 w-5" />
+        <X className="h-6 w-6" />
       </button>
+      <p className="absolute bottom-6 left-0 right-0 text-center text-white/60 text-sm">{alt}</p>
     </div>
   );
 }
 
-// ── Quick Add Customer mini-dialog ────────────────────────
+// ── Add Customer — full-screen on mobile ──────────────────
 function AddCustomerDialog({
   open, onClose, onCreated,
 }: { open: boolean; onClose: () => void; onCreated: (c: Contact) => void }) {
@@ -93,14 +102,14 @@ function AddCustomerDialog({
     if (!form.firstName.trim()) return;
     setBusy(true);
     try {
-      const created = await api.post<Contact>("/api/contacts", {
+      const created = await contactsOffline.create({
         firstName: form.firstName.trim(),
         lastName:  form.lastName.trim(),
         phone:     form.phone.trim() || undefined,
         company:   form.company.trim() || undefined,
         email:     `${form.firstName.toLowerCase().replace(/\s+/g, "")}.${Date.now()}@customer.local`,
         status:    "active",
-      });
+      } as any);
       toast({ title: `ဖောက်သည် "${form.firstName}" ထည့်ပြီး` });
       onCreated(created);
       onClose();
@@ -114,42 +123,74 @@ function AddCustomerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-sm:inset-0 max-sm:[transform:none] max-sm:max-w-none max-sm:h-screen max-sm:rounded-none overflow-y-auto sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-4 w-4 text-primary" />
+      {/* Full-screen on mobile, compact sheet on sm+ */}
+      <DialogContent className="
+        max-sm:fixed max-sm:inset-0 max-sm:w-full max-sm:h-full max-sm:max-w-none max-sm:max-h-none
+        max-sm:rounded-none max-sm:[transform:none] max-sm:border-0
+        overflow-y-auto sm:max-w-md sm:rounded-2xl
+      ">
+        <DialogHeader className="flex-row items-center gap-3 pb-0">
+          <button
+            className="sm:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100"
+            onClick={onClose}
+            type="button"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <UserPlus className="h-5 w-5 text-primary" />
             ဖောက်သည်အသစ်ထည့်မည်
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <form onSubmit={submit} className="space-y-4 pt-2">
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>နာမည် *</Label>
-              <Input value={form.firstName} onChange={(e) => set("firstName", e.target.value)}
-                placeholder="ဥပမာ — မောင်မောင်" required autoFocus />
+            <div className="space-y-2">
+              <Label className="text-base">နာမည် *</Label>
+              <Input
+                value={form.firstName}
+                onChange={(e) => set("firstName", e.target.value)}
+                placeholder="မောင်မောင်"
+                required autoFocus
+                className="h-12 text-base"
+              />
             </div>
-            <div className="space-y-1.5">
-              <Label>မိသားစုနာမည်</Label>
-              <Input value={form.lastName} onChange={(e) => set("lastName", e.target.value)}
-                placeholder="ရွေးချယ်နိုင်" />
+            <div className="space-y-2">
+              <Label className="text-base">မိသားစုနာမည်</Label>
+              <Input
+                value={form.lastName}
+                onChange={(e) => set("lastName", e.target.value)}
+                placeholder="ရွေးချယ်နိုင်"
+                className="h-12 text-base"
+              />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label>ဖုန်းနံပါတ်</Label>
-            <Input value={form.phone} onChange={(e) => set("phone", e.target.value)}
-              placeholder="09-XXXXXXXXX" type="tel" />
+          <div className="space-y-2">
+            <Label className="text-base">ဖုန်းနံပါတ်</Label>
+            <Input
+              value={form.phone}
+              onChange={(e) => set("phone", e.target.value)}
+              placeholder="09-XXXXXXXXX"
+              type="tel"
+              className="h-12 text-base"
+            />
           </div>
-          <div className="space-y-1.5">
-            <Label>ကုမ္ပဏီ / အဖွဲ့အစည်း</Label>
-            <Input value={form.company} onChange={(e) => set("company", e.target.value)}
-              placeholder="ရွေးချယ်နိုင်" />
+          <div className="space-y-2">
+            <Label className="text-base">ကုမ္ပဏီ / အဖွဲ့အစည်း</Label>
+            <Input
+              value={form.company}
+              onChange={(e) => set("company", e.target.value)}
+              placeholder="ရွေးချယ်နိုင်"
+              className="h-12 text-base"
+            />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={busy}>မလုပ်တော့</Button>
-            <Button type="submit" disabled={busy || !form.firstName.trim()}>
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={busy} className="flex-1 h-12 text-base">
+              မလုပ်တော့
+            </Button>
+            <Button type="submit" disabled={busy || !form.firstName.trim()} className="flex-1 h-12 text-base font-semibold">
               {busy ? "ထည့်နေသည်..." : "ဖောက်သည်ထည့်မည်"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
@@ -214,118 +255,227 @@ function SaleForm({
   const total = cart.reduce((s, item) => s + item.quantity * item.unitPrice, 0);
   const totalQty = cart.reduce((s, item) => s + item.quantity, 0);
 
-  // ── Cart panel (shared between mobile and desktop) ────
+  // ── Cart panel ────────────────────────────────────────
   const CartPanel = () => (
     <div className="flex flex-col h-full">
-      <div className="p-2 border-b bg-gray-50 text-xs font-semibold text-gray-500 shrink-0">
+      <div className="px-3 py-2.5 border-b bg-gray-50 text-sm font-semibold text-gray-600 shrink-0">
         🛒 ပြောင်းလဲချက် ({cart.length} မျိုး)
       </div>
       <div className="flex-1 overflow-y-auto divide-y min-h-0">
         {cart.length === 0 && (
-          <div className="py-10 text-center text-xs text-gray-400">ကုန်ပစ္စည်းရွေးပါ</div>
+          <div className="py-12 text-center text-sm text-gray-400 flex flex-col items-center gap-2">
+            <ShoppingCart className="h-10 w-10 text-gray-200" />
+            <span>ကုန်ပစ္စည်းရွေးပါ</span>
+          </div>
         )}
         {cart.map((item, i) => (
-          <div key={i} className="flex items-center gap-2 p-2">
-            <div className="h-10 w-10 rounded-lg overflow-hidden border shrink-0 bg-gray-50">
-              <ProductThumb imageUrl={item.imageUrl} name={item.productName} className="rounded-lg" />
+          <div key={i} className="flex items-center gap-3 px-3 py-3">
+            <div className="h-14 w-14 rounded-xl overflow-hidden border shrink-0 bg-gray-50">
+              <ProductThumb imageUrl={item.imageUrl} name={item.productName} className="rounded-xl" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium truncate">{item.productName}</div>
-              <div className="text-xs text-primary font-semibold">{formatCurrency(item.unitPrice)}</div>
+              <div className="text-sm font-semibold truncate">{item.productName}</div>
+              <div className="text-sm text-primary font-bold">{formatCurrency(item.unitPrice)}</div>
+              <div className="text-xs text-gray-400">ပေါင်း: {formatCurrency(item.quantity * item.unitPrice)}</div>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <button type="button" onClick={() => updateQty(i, -1)}
-                className="h-9 w-9 rounded-lg border-2 flex items-center justify-center hover:bg-gray-100 active:scale-95 touch-manipulation">
-                <Minus className="h-4 w-4" />
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => updateQty(i, -1)}
+                className="h-11 w-11 rounded-xl border-2 flex items-center justify-center hover:bg-red-50 hover:border-red-300 active:scale-95 touch-manipulation transition-colors"
+              >
+                <Minus className="h-5 w-5" />
               </button>
-              <span className="text-sm font-bold w-8 text-center">{item.quantity}</span>
-              <button type="button" onClick={() => updateQty(i, 1)}
-                className="h-9 w-9 rounded-lg border-2 border-primary/40 bg-primary/5 flex items-center justify-center hover:bg-primary/10 active:scale-95 touch-manipulation text-primary">
-                <Plus className="h-4 w-4" />
+              <span className="text-base font-bold w-8 text-center tabular-nums">{item.quantity}</span>
+              <button
+                type="button"
+                onClick={() => updateQty(i, 1)}
+                className="h-11 w-11 rounded-xl border-2 border-primary/40 bg-primary/5 flex items-center justify-center hover:bg-primary/15 active:scale-95 touch-manipulation transition-colors text-primary"
+              >
+                <Plus className="h-5 w-5" />
               </button>
             </div>
-            <button type="button" onClick={() => removeFromCart(i)} className="text-gray-300 hover:text-red-500 ml-1">
-              <X className="h-3.5 w-3.5" />
+            <button
+              type="button"
+              onClick={() => removeFromCart(i)}
+              className="text-gray-300 hover:text-red-500 p-1 ml-1 touch-manipulation"
+            >
+              <X className="h-4 w-4" />
             </button>
           </div>
         ))}
       </div>
-      <div className="border-t p-3 bg-gray-50 shrink-0">
+      <div className="border-t px-4 py-3 bg-gray-50 shrink-0">
         <div className="flex justify-between items-center">
           <span className="text-sm font-semibold text-gray-600">စုစုပေါင်း</span>
-          <span className="text-lg font-bold text-primary">{formatCurrency(total)}</span>
+          <span className="text-xl font-bold text-primary">{formatCurrency(total)}</span>
         </div>
       </div>
     </div>
   );
 
-  // ── Product grid (shared between mobile and desktop) ──
+  // ── Product Grid — MOBILE: single-column horizontal cards ──────────────
+  // ── Product Grid — TABLET+: 2-col or 3-col vertical cards ─────────────
   const ProductGrid = () => (
     <div className="flex flex-col h-full">
-      <div className="p-2 border-b bg-gray-50 shrink-0">
+      {/* Search */}
+      <div className="p-2.5 border-b bg-gray-50 shrink-0">
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            className="h-8 pl-8 text-sm"
+            className="h-10 pl-9 text-sm"
             placeholder="ကုန်ပစ္စည်းရှာမည်..."
             value={productSearch}
             onChange={(e) => setProductSearch(e.target.value)}
           />
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-2 min-h-0">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 content-start">
+
+      <div className="flex-1 overflow-y-auto min-h-0">
+
+        {/* ── MOBILE: single-column horizontal card list ── */}
+        <div className="sm:hidden divide-y">
           {filteredProducts.map((p) => {
-            const inCart = cart.find((c) => c.productId === p.id);
-            const isLow  = p.stock !== undefined && p.stock !== null && p.stock < (p.minStock ?? 5);
+            const inCart  = cart.find((c) => c.productId === p.id);
+            const cartIdx = cart.findIndex((c) => c.productId === p.id);
+            const isLow   = p.stock !== undefined && p.stock !== null && p.stock < (p.minStock ?? 5);
             return (
-              /* Wrapper div — needed so the zoom button is a sibling of the card button (no nesting) */
-              <div key={p.id} className="relative">
-                <button
-                  type="button"
-                  onClick={() => { addToCart(p); setMobileTab("cart"); }}
-                  className={cn(
-                    "relative flex flex-col items-center w-full rounded-xl border text-center transition-all",
-                    "hover:shadow-md hover:border-primary/50 active:scale-95 overflow-hidden pb-2 touch-manipulation",
-                    inCart ? "border-primary bg-primary/5 shadow-sm" : "border-gray-200 bg-white"
-                  )}
+              <div
+                key={p.id}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-3 transition-colors active:bg-gray-50",
+                  inCart ? "bg-primary/5" : "bg-white"
+                )}
+              >
+                {/* Thumbnail — tappable to open lightbox */}
+                <div
+                  className="relative h-[72px] w-[72px] rounded-2xl overflow-hidden border shrink-0 bg-gray-100 shadow-sm"
+                  onClick={() => p.imageUrl && setLightbox({ src: p.imageUrl, alt: p.name })}
                 >
-                  {/* Image area — 4:3 ratio */}
-                  <div className="w-full aspect-[4/3] overflow-hidden bg-gray-50 rounded-t-xl">
-                    <ProductThumb imageUrl={p.imageUrl} name={p.name} className="rounded-t-xl" />
-                  </div>
-                  <div className="px-2 pt-1.5 pb-0.5 w-full">
-                    <div className="text-[13px] font-semibold text-gray-800 leading-tight line-clamp-2">{p.name}</div>
-                    <div className="text-sm font-bold text-primary mt-1">{formatCurrency(p.price)}</div>
-                    {p.stock !== undefined && (
-                      <div className={cn("text-[11px] mt-0.5", isLow ? "text-red-500 font-medium" : "text-gray-400")}>
-                        {isLow ? "⚠ " : ""}{p.stock} {p.unit}
-                      </div>
-                    )}
-                  </div>
-                  {inCart && (
-                    <div className="absolute top-2 right-2 h-6 w-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shadow-md">
-                      {inCart.quantity}
+                  <ProductThumb imageUrl={p.imageUrl} name={p.name} />
+                  {p.imageUrl && (
+                    <div className="absolute inset-0 flex items-end justify-end p-1 pointer-events-none">
+                      <ZoomIn className="h-3.5 w-3.5 text-white/80 drop-shadow" />
                     </div>
                   )}
-                </button>
-                {/* Zoom button — sibling of card button, positioned over image corner */}
-                {p.imageUrl && (
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[15px] font-semibold text-gray-900 leading-snug line-clamp-2">
+                    {p.name}
+                  </div>
+                  <div className="text-lg font-bold text-primary mt-0.5">
+                    {formatCurrency(p.price)}
+                  </div>
+                  {p.stock !== undefined && (
+                    <div className={cn("text-xs mt-0.5", isLow ? "text-red-500 font-semibold" : "text-gray-400")}>
+                      {isLow ? "⚠ " : ""}ကျန်: {p.stock} {p.unit}
+                    </div>
+                  )}
+                </div>
+
+                {/* Add / quantity control */}
+                {inCart ? (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => updateQty(cartIdx, -1)}
+                      className="h-12 w-12 rounded-2xl border-2 flex items-center justify-center hover:bg-red-50 hover:border-red-300 active:scale-95 touch-manipulation transition-all shadow-sm"
+                    >
+                      <Minus className="h-5 w-5" />
+                    </button>
+                    <span className="text-lg font-bold w-9 text-center tabular-nums text-primary">
+                      {inCart.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => addToCart(p)}
+                      className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center hover:bg-primary/90 active:scale-95 touch-manipulation transition-all shadow-md"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    onClick={() => setLightbox({ src: p.imageUrl!, alt: p.name })}
-                    className="absolute top-1.5 left-1.5 h-7 w-7 rounded-full bg-black/40 hover:bg-black/70 flex items-center justify-center text-white transition-colors z-10 touch-manipulation"
-                    aria-label="ပုံကြည့်မည်"
+                    onClick={() => addToCart(p)}
+                    className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center hover:bg-primary/90 active:scale-95 touch-manipulation transition-all shadow-md shrink-0"
+                    aria-label="ထည့်မည်"
                   >
-                    <ZoomIn className="h-3.5 w-3.5" />
+                    <Plus className="h-6 w-6" />
                   </button>
                 )}
               </div>
             );
           })}
+
           {filteredProducts.length === 0 && (
-            <div className="col-span-3 py-8 text-center text-sm text-gray-400">ကုန်ပစ္စည်းမတွေ့ပါ</div>
+            <div className="py-16 text-center text-sm text-gray-400 flex flex-col items-center gap-2">
+              <Package className="h-10 w-10 text-gray-200" />
+              <span>ကုန်ပစ္စည်းမတွေ့ပါ</span>
+            </div>
           )}
+        </div>
+
+        {/* ── TABLET+: 2-col / 3-col vertical card grid ── */}
+        <div className="hidden sm:block p-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 content-start">
+            {filteredProducts.map((p) => {
+              const inCart = cart.find((c) => c.productId === p.id);
+              const isLow  = p.stock !== undefined && p.stock !== null && p.stock < (p.minStock ?? 5);
+              return (
+                <div key={p.id} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => addToCart(p)}
+                    className={cn(
+                      "relative flex flex-col items-center w-full rounded-2xl border text-center transition-all",
+                      "hover:shadow-lg hover:border-primary/50 active:scale-[0.97] overflow-hidden pb-3 touch-manipulation",
+                      inCart ? "border-primary bg-primary/5 shadow-md" : "border-gray-200 bg-white shadow-sm"
+                    )}
+                  >
+                    {/* Square image */}
+                    <div className="w-full aspect-square overflow-hidden bg-gray-50 rounded-t-2xl">
+                      <ProductThumb imageUrl={p.imageUrl} name={p.name} className="rounded-t-2xl" />
+                    </div>
+                    <div className="px-2.5 pt-2 pb-0.5 w-full">
+                      <div className="text-[13px] font-semibold text-gray-800 leading-tight line-clamp-2">
+                        {p.name}
+                      </div>
+                      <div className="text-base font-bold text-primary mt-1">{formatCurrency(p.price)}</div>
+                      {p.stock !== undefined && (
+                        <div className={cn("text-[11px] mt-0.5", isLow ? "text-red-500 font-semibold" : "text-gray-400")}>
+                          {isLow ? "⚠ " : ""}{p.stock} {p.unit}
+                        </div>
+                      )}
+                    </div>
+                    {inCart && (
+                      <div className="absolute top-2 right-2 h-7 w-7 rounded-full bg-primary text-white text-sm flex items-center justify-center font-bold shadow-lg">
+                        {inCart.quantity}
+                      </div>
+                    )}
+                  </button>
+                  {/* Lightbox zoom */}
+                  {p.imageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setLightbox({ src: p.imageUrl!, alt: p.name })}
+                      className="absolute top-2 left-2 h-8 w-8 rounded-full bg-black/40 hover:bg-black/70 flex items-center justify-center text-white transition-colors z-10 touch-manipulation"
+                      aria-label="ပုံကြည့်မည်"
+                    >
+                      <ZoomIn className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+            {filteredProducts.length === 0 && (
+              <div className="col-span-3 py-10 text-center text-sm text-gray-400">
+                ကုန်ပစ္စည်းမတွေ့ပါ
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -345,28 +495,30 @@ function SaleForm({
         }}
       />
 
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        if (cart.length === 0) return;
-        onSubmit({
-          ...form,
-          contactId:  form.contactId  ? parseInt(form.contactId)  : undefined,
-          assignedTo: form.assignedTo ? parseInt(form.assignedTo) : undefined,
-          items: cart.map(({ productId, productName, quantity, unitPrice }) => ({
-            productId, productName, quantity, unitPrice,
-          })),
-          total,
-        });
-      }} className="flex flex-col gap-4">
-
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (cart.length === 0) return;
+          onSubmit({
+            ...form,
+            contactId:  form.contactId  ? parseInt(form.contactId)  : undefined,
+            assignedTo: form.assignedTo ? parseInt(form.assignedTo) : undefined,
+            items: cart.map(({ productId, productName, quantity, unitPrice }) => ({
+              productId, productName, quantity, unitPrice,
+            })),
+            total,
+          });
+        }}
+        className="flex flex-col gap-4"
+      >
         {/* ── Header fields ── */}
         <div className="grid grid-cols-2 gap-3">
-          {/* Customer row — full width with add button */}
-          <div className="col-span-2 space-y-1.5">
-            <Label>ဖောက်သည်</Label>
+          {/* Customer — full width */}
+          <div className="col-span-2 space-y-2">
+            <Label className="text-sm">ဖောက်သည်</Label>
             <div className="flex gap-2">
               <Select value={form.contactId} onValueChange={(v) => set("contactId", v)}>
-                <SelectTrigger className="h-9 text-sm flex-1">
+                <SelectTrigger className="h-11 text-sm flex-1">
                   <SelectValue placeholder="ဖောက်သည်ရွေးပါ (မဖြစ်မနေမလို)" />
                 </SelectTrigger>
                 <SelectContent>
@@ -381,34 +533,42 @@ function SaleForm({
                 type="button"
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 shrink-0 border-primary/40 text-primary hover:bg-primary/5"
+                className="h-11 w-11 shrink-0 border-primary/40 text-primary hover:bg-primary/5"
                 title="ဖောက်သည်အသစ်ထည့်မည်"
                 onClick={() => setAddCustOpen(true)}
               >
-                <UserPlus className="h-4 w-4" />
+                <UserPlus className="h-5 w-5" />
               </Button>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>ရောင်းသူ</Label>
+          <div className="space-y-2">
+            <Label className="text-sm">ရောင်းသူ</Label>
             <Select value={form.assignedTo} onValueChange={(v) => set("assignedTo", v)}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="ရောင်းသူရွေးပါ" /></SelectTrigger>
+              <SelectTrigger className="h-11 text-sm">
+                <SelectValue placeholder="ရောင်းသူရွေးပါ" />
+              </SelectTrigger>
               <SelectContent>
                 {users.map((u) => <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>ရောင်းရက်</Label>
-            <Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} className="h-9 text-sm" required />
+          <div className="space-y-2">
+            <Label className="text-sm">ရောင်းရက်</Label>
+            <Input
+              type="date"
+              value={form.date}
+              onChange={(e) => set("date", e.target.value)}
+              className="h-11 text-sm"
+              required
+            />
           </div>
 
-          <div className="space-y-1.5">
-            <Label>အခြေအနေ</Label>
+          <div className="col-span-2 space-y-2">
+            <Label className="text-sm">အခြေအနေ</Label>
             <Select value={form.status} onValueChange={(v) => set("status", v)}>
-              <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-11 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {Object.entries(statusConfig).map(([k, v]) => (
                   <SelectItem key={k} value={k}>{v.label}</SelectItem>
@@ -418,17 +578,14 @@ function SaleForm({
           </div>
         </div>
 
-        {/* ── POS Grid ── */}
-
-        {/* MOBILE: tab switcher + panels */}
+        {/* ── MOBILE: tab switcher + full panels ── */}
         <div className="sm:hidden">
-          {/* Tab bar */}
-          <div className="flex rounded-lg border overflow-hidden mb-2">
+          <div className="flex rounded-xl border overflow-hidden mb-3 shadow-sm">
             <button
               type="button"
               onClick={() => setMobileTab("products")}
               className={cn(
-                "flex-1 py-2 text-sm font-semibold transition-colors",
+                "flex-1 py-3 text-sm font-semibold transition-colors",
                 mobileTab === "products"
                   ? "bg-primary text-white"
                   : "bg-gray-50 text-gray-600 hover:bg-gray-100"
@@ -440,7 +597,7 @@ function SaleForm({
               type="button"
               onClick={() => setMobileTab("cart")}
               className={cn(
-                "flex-1 py-2 text-sm font-semibold transition-colors relative",
+                "flex-1 py-3 text-sm font-semibold transition-colors relative",
                 mobileTab === "cart"
                   ? "bg-primary text-white"
                   : "bg-gray-50 text-gray-600 hover:bg-gray-100"
@@ -457,14 +614,14 @@ function SaleForm({
               )}
             </button>
           </div>
-          {/* Active panel */}
-          <div className="border rounded-xl overflow-hidden" style={{ height: 480 }}>
+          {/* Panel — tall enough to show several products */}
+          <div className="border rounded-2xl overflow-hidden shadow-sm" style={{ height: 420 }}>
             {mobileTab === "products" ? <ProductGrid /> : <CartPanel />}
           </div>
         </div>
 
-        {/* DESKTOP: side-by-side */}
-        <div className="hidden sm:grid sm:grid-cols-5 gap-4 border rounded-xl overflow-hidden" style={{ height: 360 }}>
+        {/* ── TABLET+: side-by-side ── */}
+        <div className="hidden sm:grid sm:grid-cols-5 gap-4 border rounded-2xl overflow-hidden shadow-sm" style={{ height: 400 }}>
           <div className="col-span-3 border-r overflow-hidden flex flex-col">
             <ProductGrid />
           </div>
@@ -473,20 +630,35 @@ function SaleForm({
           </div>
         </div>
 
-        {/* Notes + Submit */}
-        <div className="space-y-1.5">
-          <Label>မှတ်ချက်</Label>
-          <Input value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="ရွေးချယ်နိုင်သောမှတ်ချက်..." />
+        {/* Notes */}
+        <div className="space-y-2">
+          <Label className="text-sm">မှတ်ချက်</Label>
+          <Input
+            value={form.notes}
+            onChange={(e) => set("notes", e.target.value)}
+            placeholder="ရွေးချယ်နိုင်သောမှတ်ချက်..."
+            className="h-11"
+          />
         </div>
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>မလုပ်တော့</Button>
-          <Button type="submit" disabled={cart.length === 0} className="gap-1.5">
-            <ShoppingCart className="h-4 w-4" />
-            အရောင်းမှတ်တမ်းတင်မည်
-            {cart.length > 0 && <span className="font-bold">({formatCurrency(total)})</span>}
+        {/* Submit */}
+        <div className="flex gap-3 pt-1">
+          <Button type="button" variant="outline" onClick={onClose} className="flex-1 sm:flex-none h-12 text-base">
+            မလုပ်တော့
           </Button>
-        </DialogFooter>
+          <Button
+            type="submit"
+            disabled={cart.length === 0}
+            className="flex-1 h-12 text-base font-semibold gap-2"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            <span className="hidden sm:inline">အရောင်းမှတ်တမ်းတင်မည်</span>
+            <span className="sm:hidden">မှတ်တမ်းတင်မည်</span>
+            {cart.length > 0 && (
+              <span className="font-bold ml-1">({formatCurrency(total)})</span>
+            )}
+          </Button>
+        </div>
       </form>
     </>
   );
@@ -498,7 +670,11 @@ function SaleDetailModal({ sale, products, onClose }: {
 }) {
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-sm:inset-0 max-sm:[transform:none] max-sm:max-w-none max-sm:h-screen max-sm:rounded-none overflow-y-auto sm:max-w-lg sm:max-h-[90vh]">
+      <DialogContent className="
+        max-sm:fixed max-sm:inset-0 max-sm:w-full max-sm:h-full max-sm:max-w-none max-sm:max-h-none
+        max-sm:rounded-none max-sm:[transform:none] max-sm:border-0
+        overflow-y-auto sm:max-w-lg sm:max-h-[90vh] sm:rounded-2xl
+      ">
         <DialogHeader>
           <DialogTitle>
             အရောင်း #{String(sale.id).padStart(4, "0")} — {formatDate(sale.date)}
@@ -506,12 +682,26 @@ function SaleDetailModal({ sale, products, onClose }: {
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><span className="text-gray-500">ဖောက်သည်:</span> <span className="font-medium">{sale.contactName || "—"}</span></div>
-            <div><span className="text-gray-500">အခြေအနေ:</span> <Badge variant={statusConfig[sale.status]?.variant} className="ml-1">{statusConfig[sale.status]?.label}</Badge></div>
-            <div><span className="text-gray-500">ရောင်းသူ:</span> <span className="font-medium">{sale.assignedToName || "—"}</span></div>
-            <div><span className="text-gray-500">ရက်စွဲ:</span> <span className="font-medium">{formatDate(sale.date)}</span></div>
+            <div>
+              <span className="text-gray-500">ဖောက်သည်:</span>
+              <span className="font-medium ml-1">{sale.contactName || "—"}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">အခြေအနေ:</span>
+              <Badge variant={statusConfig[sale.status]?.variant} className="ml-1">
+                {statusConfig[sale.status]?.label}
+              </Badge>
+            </div>
+            <div>
+              <span className="text-gray-500">ရောင်းသူ:</span>
+              <span className="font-medium ml-1">{sale.assignedToName || "—"}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">ရက်စွဲ:</span>
+              <span className="font-medium ml-1">{formatDate(sale.date)}</span>
+            </div>
           </div>
-          <div className="border rounded-lg overflow-hidden">
+          <div className="border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
@@ -527,14 +717,16 @@ function SaleDetailModal({ sale, products, onClose }: {
                   return (
                     <tr key={i}>
                       <td className="px-3 py-2 w-12">
-                        <div className="h-9 w-9 rounded-lg overflow-hidden border bg-gray-50">
+                        <div className="h-10 w-10 rounded-lg overflow-hidden border bg-gray-50">
                           <ProductThumb imageUrl={p?.imageUrl} name={item.productName} className="rounded-lg" />
                         </div>
                       </td>
                       <td className="px-3 py-2 font-medium">{item.productName}</td>
                       <td className="px-3 py-2 text-right">{item.quantity}</td>
                       <td className="px-3 py-2 text-right">{formatCurrency(item.unitPrice)}</td>
-                      <td className="px-3 py-2 text-right font-semibold text-primary">{formatCurrency(item.quantity * item.unitPrice)}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-primary">
+                        {formatCurrency(item.quantity * item.unitPrice)}
+                      </td>
                     </tr>
                   );
                 })}
@@ -542,15 +734,19 @@ function SaleDetailModal({ sale, products, onClose }: {
               <tfoot className="border-t bg-gray-50">
                 <tr>
                   <td colSpan={4} className="px-3 py-2 text-right font-semibold text-sm">စုစုပေါင်း</td>
-                  <td className="px-3 py-2 text-right font-bold text-primary text-base">{formatCurrency(sale.total)}</td>
+                  <td className="px-3 py-2 text-right font-bold text-primary text-base">
+                    {formatCurrency(sale.total)}
+                  </td>
                 </tr>
               </tfoot>
             </table>
           </div>
-          {sale.notes && <p className="text-sm text-gray-500 bg-gray-50 rounded-lg px-3 py-2">{sale.notes}</p>}
+          {sale.notes && (
+            <p className="text-sm text-gray-500 bg-gray-50 rounded-xl px-3 py-2">{sale.notes}</p>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>ပိတ်မည်</Button>
+          <Button variant="outline" onClick={onClose} className="h-11 px-6">ပိတ်မည်</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -561,20 +757,21 @@ function SaleDetailModal({ sale, products, onClose }: {
 export default function Sales() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [search, setSearch]           = useState("");
+  const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dialogOpen, setDialogOpen]   = useState(false);
-  const [viewSale, setViewSale]       = useState<Sale | undefined>();
+  const [dialogOpen, setDialogOpen]     = useState(false);
+  const [viewSale, setViewSale]         = useState<Sale | undefined>();
 
-  const { data: sales    = [] } = useQuery({ queryKey: ["sales"],    queryFn: () => api.get<Sale[]>("/api/sales") });
-  const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: () => api.get<Product[]>("/api/products") });
-  const { data: contacts = [] } = useQuery({ queryKey: ["contacts"], queryFn: () => api.get<Contact[]>("/api/contacts") });
-  const { data: users    = [] } = useQuery({ queryKey: ["users"],    queryFn: () => api.get<User[]>("/api/users") });
+  // ── Offline-first reads — always from IndexedDB (SyncContext keeps it current) ──
+  const { data: sales    = [] } = useQuery({ queryKey: ["sales"],    queryFn: salesOffline.list });
+  const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: productsOffline.list });
+  const { data: contacts = [] } = useQuery({ queryKey: ["contacts"], queryFn: contactsOffline.list });
+  const { data: users    = [] } = useQuery({ queryKey: ["users"],    queryFn: usersOffline.list });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["sales"] });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => api.post("/api/sales", data),
+    mutationFn: (data: any) => salesOffline.create(data),
     onSuccess: () => {
       invalidate();
       qc.invalidateQueries({ queryKey: ["contacts"] });
@@ -583,32 +780,37 @@ export default function Sales() {
     },
     onError: (e: any) => toast({ title: "အမှား", description: e.message, variant: "destructive" }),
   });
+
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => api.delete(`/api/sales/${id}`),
+    mutationFn: (id: number) => salesOffline.delete(id),
     onSuccess: () => { invalidate(); toast({ title: "အရောင်းဖျက်ပြီး" }); },
   });
 
   const filtered = sales.filter((s) => {
-    const matchSearch = !search || s.contactName?.toLowerCase().includes(search.toLowerCase()) || String(s.id).includes(search);
+    const matchSearch = !search
+      || s.contactName?.toLowerCase().includes(search.toLowerCase())
+      || String(s.id).includes(search);
     const matchStatus = statusFilter === "all" || s.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
   const totalSales       = sales.reduce((s, sale) => s + sale.total, 0);
-  const confirmedRevenue = sales.filter((s) => s.status === "confirmed" || s.status === "delivered").reduce((s, sale) => s + sale.total, 0);
+  const confirmedRevenue = sales
+    .filter((s) => s.status === "confirmed" || s.status === "delivered")
+    .reduce((s, sale) => s + sale.total, 0);
   const avgOrderValue    = sales.length > 0 ? totalSales / sales.length : 0;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "မှာယူမှုစုစုပေါင်း",           value: String(sales.length),            icon: ShoppingCart, color: "bg-blue-50 text-blue-600" },
-          { label: "အတည်ပြုဝင်ငွေ",                 value: formatCurrency(confirmedRevenue), icon: DollarSign,   color: "bg-emerald-50 text-emerald-600" },
-          { label: "ပျမ်းမျှမှာယူမှုတန်ဖိုး",       value: formatCurrency(avgOrderValue),    icon: TrendingUp,   color: "bg-indigo-50 text-indigo-600" },
+          { label: "မှာယူမှုစုစုပေါင်း",          value: String(sales.length),            icon: ShoppingCart, color: "bg-blue-50 text-blue-600" },
+          { label: "အတည်ပြုဝင်ငွေ",                value: formatCurrency(confirmedRevenue), icon: DollarSign,   color: "bg-emerald-50 text-emerald-600" },
+          { label: "ပျမ်းမျှမှာယူမှုတန်ဖိုး",      value: formatCurrency(avgOrderValue),    icon: TrendingUp,   color: "bg-indigo-50 text-indigo-600" },
           { label: "ရောင်းချသောပစ္စည်းစုစုပေါင်း",  value: String(sales.reduce((s, sale) => s + (sale.items?.length ?? 0), 0)), icon: Package, color: "bg-amber-50 text-amber-600" },
         ].map((s) => (
-          <div key={s.label} className="bg-white rounded-lg border p-3 flex items-center gap-3">
+          <div key={s.label} className="bg-white rounded-xl border p-3 flex items-center gap-3">
             <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${s.color}`}>
               <s.icon className="h-5 w-5" />
             </div>
@@ -620,7 +822,7 @@ export default function Sales() {
         ))}
       </div>
 
-      {/* Status filter — scrollable on mobile */}
+      {/* Status filter */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
         {[["all","အားလုံး"],["pending","စောင့်ဆိုင်းနေ"],["confirmed","အတည်ပြုပြီ"],["delivered","ပို့ဆောင်ပြီ"],["cancelled","ပယ်ဖျက်ပြီ"]].map(([s, label]) => (
           <button
@@ -636,6 +838,7 @@ export default function Sales() {
         ))}
       </div>
 
+      {/* Search + New button */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -646,7 +849,7 @@ export default function Sales() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="gap-1.5 shrink-0">
+        <Button onClick={() => setDialogOpen(true)} className="gap-1.5 shrink-0 h-10">
           <Plus className="h-4 w-4" />
           <span className="hidden sm:inline">အရောင်းမှတ်တမ်းတင်မည်</span>
           <span className="sm:hidden">အရောင်း</span>
@@ -687,7 +890,9 @@ export default function Sales() {
                     </td>
                     <td className="px-4 py-3 text-sm font-bold text-primary">{formatCurrency(sale.total)}</td>
                     <td className="px-4 py-3">
-                      <Badge variant={statusConfig[sale.status]?.variant}>{statusConfig[sale.status]?.label}</Badge>
+                      <Badge variant={statusConfig[sale.status]?.variant}>
+                        {statusConfig[sale.status]?.label}
+                      </Badge>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">{sale.assignedToName || "—"}</td>
                     <td className="px-4 py-3 text-xs text-gray-400 whitespace-nowrap">{formatDate(sale.date)}</td>
@@ -726,11 +931,24 @@ export default function Sales() {
         </CardContent>
       </Card>
 
-      {/* New Sale dialog */}
+      {/* New Sale dialog — full-screen on mobile */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-sm:inset-0 max-sm:[transform:none] max-sm:max-w-none max-sm:h-screen max-sm:rounded-none overflow-y-auto w-full sm:max-w-3xl sm:max-h-[92vh]">
-          <DialogHeader>
-            <DialogTitle>အရောင်းအသစ်မှတ်တမ်းတင်မည်</DialogTitle>
+        <DialogContent className="
+          max-sm:fixed max-sm:inset-0 max-sm:w-full max-sm:h-full max-sm:max-w-none max-sm:max-h-none
+          max-sm:rounded-none max-sm:[transform:none] max-sm:border-0
+          overflow-y-auto sm:max-w-3xl sm:max-h-[94vh] sm:rounded-2xl
+        ">
+          <DialogHeader className="flex-row items-center gap-3 pb-0 sm:pb-4">
+            <button
+              className="sm:hidden p-2 -ml-2 rounded-lg hover:bg-gray-100"
+              onClick={() => setDialogOpen(false)}
+              type="button"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <DialogTitle className="text-lg font-semibold">
+              အရောင်းအသစ်မှတ်တမ်းတင်မည်
+            </DialogTitle>
           </DialogHeader>
           <SaleForm
             products={products}
