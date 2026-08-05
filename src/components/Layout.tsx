@@ -7,16 +7,19 @@ import { Toaster } from "@/components/ui/toaster";
 export default function Layout() {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Desktop sidebar — hidden on mobile */}
+      {/* Desktop sidebar — completely absent on mobile & tablet; lg: = 1024 px */}
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <Header />
-        {/* Extra bottom padding on mobile so content isn't hidden behind the bottom nav */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
+        {/*
+          pb-20 gives clearance for the fixed bottom nav on mobile / tablet.
+          lg:pb-6 reverts to normal padding on desktop where the sidebar is shown instead.
+        */}
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-20 lg:pb-6">
           <Outlet />
         </main>
       </div>
-      {/* Mobile bottom navigation */}
+      {/* Mobile / tablet bottom navigation — hidden on lg+ */}
       <BottomNav />
       <Toaster />
     </div>

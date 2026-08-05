@@ -82,10 +82,10 @@ export default function Sidebar() {
     .slice(0, 2) || "SM";
 
   return (
-    // Desktop only — completely hidden on mobile (BottomNav handles mobile)
+    // Desktop only (≥ 1024 px) — completely absent on mobile & tablet
     <aside
       className={cn(
-        "hidden md:flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 shrink-0",
+        "hidden lg:flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 shrink-0",
         collapsed ? "w-16" : "w-60"
       )}
     >
